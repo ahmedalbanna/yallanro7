@@ -1,17 +1,25 @@
+"use client";
+
 import type { Experience } from "@/models";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Tag, Star } from "lucide-react";
+import React, { useState, useEffect } from "react";
 
 interface ExperienceCardProps {
   experience: Experience;
 }
 
 export function ExperienceCard({ experience }: ExperienceCardProps) {
-  // Mock rating
-  const rating = (Math.random() * 1.5 + 3.5).toFixed(1); // Random rating between 3.5 and 5.0
+  const [rating, setRating] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Calculate rating on client side after mount
+    const randomRatingValue = (Math.random() * 1.5 + 3.5).toFixed(1);
+    setRating(randomRatingValue);
+  }, []); // Empty dependency array ensures this runs once on mount (client-side)
 
   return (
     <Card className="overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out flex flex-col h-full rounded-xl border-transparent hover:border-primary/50 group">
@@ -27,7 +35,8 @@ export function ExperienceCard({ experience }: ExperienceCardProps) {
           />
         </Link>
         <div className="absolute top-3 right-3 bg-background/80 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center text-xs font-semibold text-foreground">
-          <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 ml-1" /> {rating}
+          <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 ml-1" />
+          {rating === null ? '' : rating} {/* Render empty string initially, then client-side value */}
         </div>
       </CardHeader>
       <CardContent className="p-4 flex-grow">
@@ -44,7 +53,7 @@ export function ExperienceCard({ experience }: ExperienceCardProps) {
           <div className="flex items-center">
             <Tag className="ml-1.5 h-4 w-4 text-primary/80" />
             {/* In a real app, fetch category name based on experience.categoryRef */}
-            <span className="truncate">{experience.categoryRef}</span> 
+            <span className="truncate">{experience.categoryRef}</span>
           </div>
         </div>
       </CardContent>
