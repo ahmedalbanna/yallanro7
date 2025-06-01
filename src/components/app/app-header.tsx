@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from '../ui/input';
 import React from 'react';
 
@@ -40,7 +40,7 @@ const NavLinks: React.FC<{ isMobile?: boolean; onLinkClick?: () => void }> = ({ 
   return (
     <>
       {currentUser?.role === 'host' && (
-        <Button asChild variant={isMobile ? "ghost" : "default"} size={isMobile ? "lg" : "sm"} className={isMobile ? "w-full justify-start" : ""} onClick={handleLinkClick}>
+        <Button asChild variant={isMobile ? "default" : "default"} size={isMobile ? "lg" : "sm"} className={isMobile ? "w-full justify-center" : ""} onClick={handleLinkClick}>
           <Link href="/host/experiences/new">
             <PlusCircle className="ml-2 h-4 w-4" />
             إضافة تجربة
@@ -98,7 +98,7 @@ const NavLinks: React.FC<{ isMobile?: boolean; onLinkClick?: () => void }> = ({ 
               </Button>
           )}
            <div className="my-1 border-t border-border -mx-2"></div>
-           <Button variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={handleLinkClick}> {/* Logout action */}
+           <Button variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={() => { /* Logout action */ handleLinkClick(); }}> 
             <LogOut className="ml-2 h-4 w-4" />
             <span>تسجيل الخروج</span>
           </Button>
@@ -197,7 +197,7 @@ export function AppHeader() {
                       </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem> {/* Add onClick for logout action */}
+                  <DropdownMenuItem onClick={() => { /* Logout action */ }}>
                     <LogOut className="ml-2 h-4 w-4" />
                     <span>تسجيل الخروج</span>
                   </DropdownMenuItem>
@@ -231,9 +231,10 @@ export function AppHeader() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-full max-w-xs p-6 font-body">
-              <div className="mb-6">
+              <SheetHeader className="mb-6">
+                <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle>
                 <AppLogo />
-              </div>
+              </SheetHeader>
               <div className="space-y-3">
                 <NavLinks isMobile onLinkClick={() => setMobileMenuOpen(false)} />
                 {!currentUser && (
