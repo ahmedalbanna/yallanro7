@@ -13,6 +13,7 @@ import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import { Label } from "@/components/ui/label";
 
 const mockUsers: User[] = [
   { uid: 'user1', email: 'client1@example.com', displayName: 'عميل سعيد', photoUrl: 'https://placehold.co/40x40.png?text=CS', role: 'client', phoneNumber: '0501234567' },
