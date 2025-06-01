@@ -1,3 +1,4 @@
+
 import { AppHeader } from "@/components/app/app-header";
 import { ExperienceCard } from "@/components/app/experience-card";
 import { CategoryChip } from "@/components/app/category-chip";
@@ -7,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapPin, Search } from "lucide-react";
 import type { Experience, Category, City } from "@/models"; 
 
-const mockExperiences: Experience[] = Array(8).fill(null).map((_, i) => ({
+// Export mock data so other components/pages can import it for now
+export const mockExperiences: Experience[] = Array(8).fill(null).map((_, i) => ({
   experienceId: `exp${i + 1}`,
   title: `تجربة مذهلة في ${i % 2 === 0 ? 'الرياض' : 'جدة'} رقم ${i + 1}`,
   description: 'وصف قصير ومثير لهذه التجربة الفريدة من نوعها التي تستكشف معالم المدينة وتقدم أنشطة متنوعة.',
@@ -20,7 +22,7 @@ const mockExperiences: Experience[] = Array(8).fill(null).map((_, i) => ({
   location: { lat: 24.7136 + (Math.random()-0.5)*2, lng: 46.6753 + (Math.random()-0.5)*2 }, 
   address: `عنوان افتراضي ${i + 1}, ${i % 2 === 0 ? 'الرياض' : 'جدة'}`,
   city: i % 2 === 0 ? 'الرياض' : 'جدة',
-  categoryRef: `cat${(i % 3) + 1}`, // Display name for now
+  categoryRef: `cat${(i % 3) + 1}`, // This should be an ID for consistency, using name for now
   hostRef: `host${i + 1}`,
   availableDates: [],
   availableTimes: [],
@@ -29,7 +31,7 @@ const mockExperiences: Experience[] = Array(8).fill(null).map((_, i) => ({
   updatedAt: new Date(),
 }));
 
-const mockCategories: Category[] = [
+export const mockCategories: Category[] = [
   { categoryId: 'cat1', name: 'مغامرات', iconUrl: 'Activity' },
   { categoryId: 'cat2', name: 'طبخ', iconUrl: 'CookingPot' },
   { categoryId: 'cat3', name: 'فنون', iconUrl: 'Paintbrush' },
@@ -37,7 +39,7 @@ const mockCategories: Category[] = [
   { categoryId: 'cat5', name: 'طبيعة', iconUrl: 'Mountain' },
 ];
 
-const mockCities: City[] = [
+export const mockCities: City[] = [
   { cityId: 'city1', name: 'الرياض' },
   { cityId: 'city2', name: 'جدة' },
   { cityId: 'city3', name: 'الدمام' },

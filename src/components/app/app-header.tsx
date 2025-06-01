@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, LogIn, LogOut, UserCircle, LayoutDashboard, PlusCircle, Users, Settings, Search, Menu } from 'lucide-react';
+import { Bell, LogIn, LogOut, UserCircle, LayoutDashboard, PlusCircle, Users, Settings, Menu } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,12 +14,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Input } from '../ui/input';
 import React from 'react';
+import { useToast } from '@/hooks/use-toast';
 
-// Mock user data and auth status - replace with actual auth context/state
-const isAuthenticated = true; 
-const userRole: 'client' | 'host' | 'admin' | null = 'client'; 
+// Mock user data and auth status - made mutable for logout simulation
+let isAuthenticatedMock = true; 
+let userRoleMock: 'client' | 'host' | 'admin' | null = 'client'; 
+let currentUserNameMock = "اسم المستخدم";
+let currentUserPhotoUrlMock = "https://placehold.co/40x40.png";
+
 
 const AppLogo = () => (
   <Link href="/" className="flex items-center gap-2" aria-label="YallaNro7 Home">
@@ -30,8 +33,8 @@ const AppLogo = () => (
   </Link>
 );
 
-const NavLinks: React.FC<{ isMobile?: boolean; onLinkClick?: () => void }> = ({ isMobile, onLinkClick }) => {
-  const currentUser = isAuthenticated ? { displayName: "اسم المستخدم", photoUrl: "https://placehold.co/40x40.png", role: userRole } : null;
+const NavLinks: React.FC<{ isMobile?: boolean; onLinkClick?: () => void, onLogout: () => void }> = ({ isMobile, onLinkClick, onLogout }) => {
+  const currentUser = isAuthenticatedMock ? { displayName: currentUserNameMock, photoUrl: currentUserPhotoUrlMock, role: userRoleMock } : null;
 
   const handleLinkClick = () => {
     if (onLinkClick) onLinkClick();
@@ -98,7 +101,7 @@ const NavLinks: React.FC<{ isMobile?: boolean; onLinkClick?: () => void }> = ({ 
               </Button>
           )}
            <div className="my-1 border-t border-border -mx-2"></div>
-           <Button variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={() => { /* Logout action */ handleLinkClick(); }}> 
+           <Button variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={() => { onLogout(); handleLinkClick(); }}> 
             <LogOut className="ml-2 h-4 w-4" />
             <span>تسجيل الخروج</span>
           </Button>
@@ -110,8 +113,24 @@ const NavLinks: React.FC<{ isMobile?: boolean; onLinkClick?: () => void }> = ({ 
 
 
 export function AppHeader() {
-  const currentUser = isAuthenticated ? { displayName: "اسم المستخدم", photoUrl: "https://placehold.co/40x40.png", role: userRole } : null;
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [_, forceUpdate] = React.useState(0); // Dummy state for re-render
+  const { toast } = useToast();
+
+  const currentUser = isAuthenticatedMock ? { displayName: currentUserNameMock, photoUrl: currentUserPhotoUrlMock, role: userRoleMock } : null;
+
+  const handleLogout = () => {
+    isAuthenticatedMock = false;
+    userRoleMock = null;
+    currentUserNameMock = "";
+    currentUserPhotoUrlMock = "";
+    forceUpdate(prev => prev + 1); // Trigger re-render
+    setMobileMenuOpen(false); // Close mobile menu on logout
+    toast({
+      title: "تم تسجيل الخروج",
+      description: "نأمل أن نراك قريباً!",
+    });
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -123,7 +142,7 @@ export function AppHeader() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <NavLinks />
+          <NavLinks onLogout={handleLogout} />
           {currentUser && (
             <>
               <Button variant="ghost" size="icon" aria-label="Notifications">
@@ -197,7 +216,7 @@ export function AppHeader() {
                       </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => { /* Logout action */ }}>
+                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="ml-2 h-4 w-4" />
                     <span>تسجيل الخروج</span>
                   </DropdownMenuItem>
@@ -231,12 +250,12 @@ export function AppHeader() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-full max-w-xs p-6 font-body">
-              <SheetHeader className="mb-6">
-                <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle>
+               <SheetHeader className="mb-6 text-left"> {/* Ensure text-align is appropriate for dir */}
+                <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle> {/* Visually hidden */}
                 <AppLogo />
               </SheetHeader>
               <div className="space-y-3">
-                <NavLinks isMobile onLinkClick={() => setMobileMenuOpen(false)} />
+                <NavLinks isMobile onLinkClick={() => setMobileMenuOpen(false)} onLogout={handleLogout}/>
                 {!currentUser && (
                   <Button asChild size="lg" className="w-full" onClick={() => setMobileMenuOpen(false)}>
                     <Link href="/auth">
@@ -254,4 +273,3 @@ export function AppHeader() {
     </header>
   );
 }
-

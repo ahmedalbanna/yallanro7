@@ -1,36 +1,54 @@
+
+"use client";
+
 import { AppHeader } from "@/components/app/app-header";
-import { PlaceholderContent } from "@/components/app/placeholder-content";
-import { Construction } from "lucide-react";
+import { ExperienceForm, type ExperienceFormValues } from "@/components/app/experience-form";
+import { mockCategories, mockCities } from "@/app/page"; // This is not ideal, consider a shared mock data file
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation"; // Or next/router for older versions
+import React from "react";
 
 export default function CreateExperiencePage() {
-  // In a real app, you'd have a form component here
-  // For now, using PlaceholderContent
+  const { toast } = useToast();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const handleSubmit = async (data: ExperienceFormValues) => {
+    setIsLoading(true);
+    console.log("Creating experience with data:", data);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Parse string arrays - in real app, backend would likely handle this
+    const experienceData = {
+        ...data,
+        activities: data.activities.split(',').map(s => s.trim()).filter(s => s),
+        images: data.images.split(',').map(s => s.trim()).filter(s => s),
+        availableDates: data.availableDates.split(',').map(s => s.trim()).filter(s => s),
+        availableTimes: data.availableTimes.split(',').map(s => s.trim()).filter(s => s),
+    };
+    console.log("Parsed experience data for API:", experienceData);
+    // TODO: Call actual API to save the experience
+
+    setIsLoading(false);
+    toast({
+      title: "نجاح!",
+      description: `تم إنشاء التجربة "${data.title}" بنجاح.`,
+    });
+    router.push("/host/listings"); // Redirect to listings page
+  };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
-      <main className="flex-1 container mx-auto py-8 px-4">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-headline text-primary">إنشاء تجربة جديدة</h1>
-          <p className="text-muted-foreground font-body mt-2">شارك شغفك وقدم تجربة لا تُنسى لضيوفك.</p>
-        </div>
-        
-        <PlaceholderContent 
-          title="نموذج إنشاء/تعديل التجربة" 
-          message="هنا سيتمكن المضيفون من إدخال جميع تفاصيل التجربة، بما في ذلك الصور، الوصف، الأسعار، التواريخ المتاحة، والموقع."
-          icon={Construction}
+      <main className="flex-1 container mx-auto py-8 sm:py-12 px-4">
+         <ExperienceForm 
+            mode="create"
+            categories={mockCategories}
+            cities={mockCities}
+            onSubmitHandler={handleSubmit}
+            isLoading={isLoading}
         />
-        
-        {/* Example structure for when form is built:
-        <Card className="max-w-3xl mx-auto shadow-xl rounded-xl">
-          <CardHeader>
-            <CardTitle className="text-2xl font-headline">تفاصيل التجربة</CardTitle>
-          </CardHeader>
-          <CardContent>
-            // <ExperienceForm mode="create" />
-          </CardContent>
-        </Card>
-        */}
       </main>
       <footer className="py-8 border-t bg-card mt-12">
         <div className="container text-center text-sm text-muted-foreground font-body">

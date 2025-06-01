@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,20 +16,25 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import type { User } from "@/models";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "البريد الإلكتروني غير صالح." }),
   password: z.string().min(6, { message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل." }),
 });
 
+const roles: [User['role'], ...User['role'][]] = ['client', 'host', 'admin'];
+
 const registerSchema = z.object({
   displayName: z.string().min(2, { message: "الاسم يجب أن يكون حرفين على الأقل."}),
   email: z.string().email({ message: "البريد الإلكتروني غير صالح." }),
   password: z.string().min(6, { message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل." }),
   confirmPassword: z.string().min(6, { message: "تأكيد كلمة المرور مطلوب." }),
+  role: z.enum(roles, { required_error: "يرجى اختيار الدور."}),
 }).refine(data => data.password === data.confirmPassword, {
   message: "كلمتا المرور غير متطابقتين.",
   path: ["confirmPassword"],
@@ -47,24 +53,33 @@ export function AuthForm() {
     resolver: zodResolver(formSchema),
     defaultValues: isLoginMode 
       ? { email: "", password: "" } 
-      : { displayName: "", email: "", password: "", confirmPassword: "" },
+      : { displayName: "", email: "", password: "", confirmPassword: "", role: "client" },
   });
 
   function onSubmit(values: FormValues) {
-    // TODO: Implement actual login/registration logic
-    console.log(values);
+    console.log("AuthForm submission:", values);
+    if (!isLoginMode) {
+        const registerValues = values as z.infer<typeof registerSchema>;
+        console.log("Registering with role:", registerValues.role);
+        // Here you would typically call your backend API
+        // For mock: update AppHeader state or global state
+        // For now, we'll just toast and log.
+    }
     toast({
       title: `تم ${isLoginMode ? 'تسجيل الدخول' : 'إنشاء الحساب'} بنجاح!`,
-      description: "سيتم توجيهك الآن...",
+      description: isLoginMode ? "سيتم توجيهك الآن..." : `تم إنشاء حساب كـ ${ (values as z.infer<typeof registerSchema>).role}. سيتم توجيهك...`,
       variant: "default"
     });
-    // router.push('/'); // Redirect after successful auth
+    // Simulate updating AppHeader state for demonstration - this is a simplified mock
+    // In a real app, this would involve actual authentication and context/state updates
+    // For prototype purposes, this console log is the primary outcome.
+    // User can manually change AppHeader mocks to test different roles.
   }
 
   const toggleMode = () => {
     setIsLoginMode(!isLoginMode);
     form.reset(isLoginMode 
-      ? { displayName: "", email: "", password: "", confirmPassword: "" } 
+      ? { displayName: "", email: "", password: "", confirmPassword: "", role: "client" } 
       : { email: "", password: "" });
   }
 
@@ -132,31 +147,57 @@ export function AuthForm() {
             )}
           />
           {!isLoginMode && (
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>تأكيد كلمة المرور</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input type={showPassword ? "text" : "password"} placeholder="••••••••" {...field} className="h-11 bg-input focus:bg-background pr-10"/>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <>
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>تأكيد كلمة المرور</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input type={showPassword ? "text" : "password"} placeholder="••••••••" {...field} className="h-11 bg-input focus:bg-background pr-10"/>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                          aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>أرغب بالتسجيل كـ</FormLabel>
+                    <Select dir="rtl" onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-11 bg-input focus:bg-background">
+                          <UserCheck className="ml-2 h-4 w-4 text-muted-foreground" />
+                          <SelectValue placeholder="اختر دورك" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="client">عميل (أبحث عن تجارب)</SelectItem>
+                        <SelectItem value="host">مضيف (أقدم تجارب)</SelectItem>
+                        {/* Admin role might not be self-selectable in a real app */}
+                        {/* <SelectItem value="admin">مسؤول</SelectItem> */}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
           )}
 
           {isLoginMode && (
