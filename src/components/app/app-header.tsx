@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, LogIn, LogOut, UserCircle, LayoutDashboard, PlusCircle, Users, Settings, Menu } from 'lucide-react';
+import { Bell, LogIn, LogOut, UserCircle, LayoutDashboard, PlusCircle, Menu, Layers, BookOpen } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,13 +80,13 @@ const NavLinks: React.FC<{ isMobile?: boolean; onLinkClick?: () => void, onLogou
               </Button>
                 <Button asChild variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={handleLinkClick}>
                 <Link href="/host/listings">
-                  <LayoutDashboard className="ml-2 h-4 w-4" />
+                  <Layers className="ml-2 h-4 w-4" />
                   <span>تجاربي</span>
                 </Link>
               </Button>
                 <Button asChild variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={handleLinkClick}>
                 <Link href="/host/bookings">
-                  <Users className="ml-2 h-4 w-4" />
+                  <BookOpen className="ml-2 h-4 w-4" />
                   <span>إدارة الحجوزات</span>
                 </Link>
               </Button>
@@ -195,13 +195,13 @@ export function AppHeader() {
                       </DropdownMenuItem>
                        <DropdownMenuItem asChild>
                         <Link href="/host/listings">
-                          <LayoutDashboard className="ml-2 h-4 w-4" />
+                          <Layers className="ml-2 h-4 w-4" />
                           <span>تجاربي</span>
                         </Link>
                       </DropdownMenuItem>
                        <DropdownMenuItem asChild>
                         <Link href="/host/bookings">
-                          <Users className="ml-2 h-4 w-4" />
+                          <BookOpen className="ml-2 h-4 w-4" />
                           <span>إدارة الحجوزات</span>
                         </Link>
                       </DropdownMenuItem>
@@ -251,8 +251,8 @@ export function AppHeader() {
             </SheetTrigger>
             <SheetContent side="right" className="w-full max-w-xs p-6 font-body">
                <SheetHeader className="mb-6 text-left"> {/* Ensure text-align is appropriate for dir */}
-                <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle> {/* Visually hidden */}
-                <AppLogo />
+                 <AppLogo />
+                 <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle> {/* Visually hidden */}
               </SheetHeader>
               <div className="space-y-3">
                 <NavLinks isMobile onLinkClick={() => setMobileMenuOpen(false)} onLogout={handleLogout}/>
@@ -273,3 +273,4 @@ export function AppHeader() {
     </header>
   );
 }
+
