@@ -1,4 +1,7 @@
 
+"use client";
+
+import React, { useState, useMemo } from "react";
 import { AppHeader } from "@/components/app/app-header";
 import { ExperienceCard } from "@/components/app/experience-card";
 import { CategoryChip } from "@/components/app/category-chip";
@@ -14,7 +17,7 @@ export const mockExperiences: Experience[] = Array(8).fill(null).map((_, i) => (
   title: `تجربة مذهلة في ${i % 2 === 0 ? 'الرياض' : 'جدة'} رقم ${i + 1}`,
   description: 'وصف قصير ومثير لهذه التجربة الفريدة من نوعها التي تستكشف معالم المدينة وتقدم أنشطة متنوعة.',
   activities: ['نشاط رئيسي', 'جولة استكشافية', 'تذوق أطعمة محلية'],
-  images: [`https://placehold.co/600x400.png?text=Exp+${i + 1}&font=belleza`],
+  images: [`https://placehold.co/600x400.png?text=Exp+${i + 1}&font=belleza`, `https://placehold.co/600x400.png?text=Image+${i+1}B&font=belleza` ],
   price: Math.floor(Math.random() * 200) + 100,
   currency: 'ر.س',
   duration: `${Math.floor(Math.random() * 3) + 2} ساعات`,
@@ -22,7 +25,7 @@ export const mockExperiences: Experience[] = Array(8).fill(null).map((_, i) => (
   location: { lat: 24.7136 + (Math.random()-0.5)*2, lng: 46.6753 + (Math.random()-0.5)*2 }, 
   address: `عنوان افتراضي ${i + 1}, ${i % 2 === 0 ? 'الرياض' : 'جدة'}`,
   city: i % 2 === 0 ? 'الرياض' : 'جدة',
-  categoryRef: `cat${(i % 3) + 1}`, // This should be an ID for consistency, using name for now
+  categoryRef: `cat${(i % 3) + 1}`, 
   hostRef: `host${i + 1}`,
   availableDates: [],
   availableTimes: [],
@@ -49,6 +52,30 @@ export const mockCities: City[] = [
 
 
 export default function HomePage() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCity, setSelectedCity] = useState("all"); // 'all' or city name
+  const [selectedCategory, setSelectedCategory] = useState("all"); // 'all' or categoryId
+
+  const filteredExperiences = useMemo(() => {
+    return mockExperiences.filter(exp => {
+      const matchesSearch = searchTerm === "" || exp.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCity = selectedCity === "all" || exp.city === selectedCity;
+      const matchesCategory = selectedCategory === "all" || exp.categoryRef === selectedCategory;
+      return matchesSearch && matchesCity && matchesCategory;
+    });
+  }, [searchTerm, selectedCity, selectedCategory]);
+
+  const handleCategoryClick = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+  };
+  
+  // The search button click can explicitly trigger filtering or can be removed if filtering is dynamic.
+  // For now, filtering is dynamic on input/select change.
+  const handleSearchButtonClick = () => {
+    // Logic to explicitly trigger search if needed, for now it's dynamic
+    console.log("Search button clicked with: ", { searchTerm, selectedCity, selectedCategory });
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
@@ -83,6 +110,8 @@ export default function HomePage() {
                     type="text"
                     placeholder="مثال: رحلة سفاري، دورة طبخ..."
                     className="h-11 pl-10 text-base bg-input focus:bg-background"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 </div>
@@ -91,7 +120,7 @@ export default function HomePage() {
                 <label htmlFor="city-select" className="block text-sm font-medium text-foreground/90 mb-1 font-body">
                   اختر المدينة
                 </label>
-                <Select dir="rtl">
+                <Select dir="rtl" value={selectedCity} onValueChange={setSelectedCity}>
                   <SelectTrigger id="city-select" className="h-11 text-base bg-input focus:bg-background">
                     <MapPin className="ml-2 h-5 w-5 text-muted-foreground" />
                     <SelectValue placeholder="جميع المدن" />
@@ -106,7 +135,7 @@ export default function HomePage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="w-full h-11 text-base sm:col-span-2 lg:col-span-1">
+              <Button className="w-full h-11 text-base sm:col-span-2 lg:col-span-1" onClick={handleSearchButtonClick}>
                 <Search className="ml-2 h-5 w-5" />
                 بحث
               </Button>
@@ -117,21 +146,38 @@ export default function HomePage() {
           <section className="mb-10">
             <h2 className="text-2xl font-headline font-semibold mb-4 text-foreground">تصفح حسب الفئة</h2>
             <div className="flex space-x-2 space-x-reverse overflow-x-auto pb-3 -mx-4 px-4">
-              <CategoryChip category={{ categoryId: 'all', name: 'عرض الكل'}} isSelected={true} />
+              <CategoryChip 
+                category={{ categoryId: 'all', name: 'عرض الكل'}} 
+                isSelected={selectedCategory === 'all'} 
+                onClick={() => handleCategoryClick('all')} 
+              />
               {mockCategories.map((category) => (
-                <CategoryChip key={category.categoryId} category={category} isSelected={false} />
+                <CategoryChip 
+                  key={category.categoryId} 
+                  category={category} 
+                  isSelected={selectedCategory === category.categoryId}
+                  onClick={() => handleCategoryClick(category.categoryId)} 
+                />
               ))}
             </div>
           </section>
 
           {/* Experiences Grid */}
           <section>
-            <h2 className="text-3xl font-headline font-semibold mb-8 text-foreground">تجارب مقترحة لك</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-8">
-              {mockExperiences.map((exp) => (
-                <ExperienceCard key={exp.experienceId} experience={exp} />
-              ))}
-            </div>
+            <h2 className="text-3xl font-headline font-semibold mb-8 text-foreground">
+              {searchTerm || selectedCity !== 'all' || selectedCategory !== 'all' ? `نتائج البحث عن "${searchTerm}"` : "تجارب مقترحة لك"}
+            </h2>
+            {filteredExperiences.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-8">
+                {filteredExperiences.map((exp) => (
+                  <ExperienceCard key={exp.experienceId} experience={exp} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-10 text-lg font-body">
+                لا توجد تجارب تطابق معايير البحث الحالية. حاول تعديل بحثك.
+              </p>
+            )}
           </section>
         </div>
       </main>
@@ -143,3 +189,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
