@@ -6,7 +6,7 @@ import type { Experience } from "@/models";
 import { mockCategories, mockCities } from "@/app/page"; // This is not ideal
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { use } from "react";
 
 // Mock data fetching - replace with actual data fetching based on params.experienceId
 const mockExperience: Experience = {
@@ -31,25 +31,30 @@ const mockExperience: Experience = {
   updatedAt: new Date(),
 };
 
-interface EditExperiencePageProps {
-  params: { experienceId: string };
+interface PageResolvedParams {
+  experienceId: string;
 }
 
-export default function EditExperiencePage({ params }: EditExperiencePageProps) {
-  const { experienceId } = params;
+interface EditExperiencePageProps {
+  params: Promise<PageResolvedParams>;
+}
+
+export default function EditExperiencePage({ params: paramsPromise }: EditExperiencePageProps) {
+  const resolvedParams = use(paramsPromise);
+  const { experienceId } = resolvedParams;
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
 
   // In a real app, fetch experience data by experienceId here
   // For now, using mockExperience and adding the ID from params
-  const experienceToEdit: Partial<Experience> = { 
-    ...mockExperience, 
+  const experienceToEdit: Partial<Experience> = {
+    ...mockExperience,
     experienceId,
     // Ensure city and categoryRef match values used by Select components if they are names/IDs
     city: mockExperience.city, // Assuming mockExperience.city is the value (name) used in Select
     categoryRef: mockExperience.categoryRef, // Assuming mockExperience.categoryRef is the value (ID)
-  }; 
+  };
 
 
   const handleSubmit = async (data: ExperienceFormValues) => {
@@ -80,7 +85,7 @@ export default function EditExperiencePage({ params }: EditExperiencePageProps) 
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
       <main className="flex-1 container mx-auto py-8 sm:py-12 px-4">
-        <ExperienceForm 
+        <ExperienceForm
             mode="edit"
             initialData={experienceToEdit}
             categories={mockCategories}
