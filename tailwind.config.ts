@@ -8,11 +8,19 @@ export default {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
+        body: ['Alegreya', 'serif'],
+        headline: ['Belleza', 'sans-serif'],
         code: ['monospace'],
+        sans: ['Inter', 'sans-serif'], // Keep Inter as a general sans-serif fallback
       },
       colors: {
         background: 'hsl(var(--background))',
