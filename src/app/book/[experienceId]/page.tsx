@@ -13,12 +13,22 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import Image from "next/image";
 import Link from "next/link";
 import { CalendarIcon, Users, Clock, CreditCard, Minus, Plus, AlertTriangle } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addDays, formatISO } from "date-fns";
 import { arSA } from "date-fns/locale";
-import React, { useState, useEffect, use } from "react"; // Import 'use'
+import React, { useState, useEffect, use } from "react"; 
 import type { Experience } from "@/models";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
+
+const generateFutureDates = (count = 5, offsetDays = 7): string[] => {
+  const dates: string[] = [];
+  const today = new Date();
+  for (let i = 0; i < count; i++) {
+    const futureDate = addDays(today, offsetDays + i);
+    dates.push(formatISO(futureDate, { representation: 'date' })); // "YYYY-MM-DD"
+  }
+  return dates;
+};
 
 const mockExperience: Experience = {
   experienceId: 'exp1',
@@ -26,7 +36,7 @@ const mockExperience: Experience = {
   images: ['https://placehold.co/600x400.png?text=Safari&font=belleza'],
   price: 350,
   currency: 'ر.س',
-  availableDates: ['2024-09-15', '2024-09-16', '2024-09-22', '2024-09-23', '2024-10-01'],
+  availableDates: generateFutureDates(), // Dynamically generate future dates
   availableTimes: ['03:00 PM', '04:00 PM', '05:00 PM'],
   maxGuests: 5,
   description: '', activities: [], duration: '', location: {lat:0, lng:0}, address: '', city: '', categoryRef: '', hostRef: '', isActive: true, createdAt: new Date(), updatedAt: new Date()
@@ -37,12 +47,12 @@ interface PageResolvedParams {
 }
 
 interface BookingProcessPageProps {
-  params: Promise<PageResolvedParams>; // Type incoming params as a Promise
+  params: Promise<PageResolvedParams>; 
 }
 
 export default function BookingProcessPage({ params: paramsPromise }: BookingProcessPageProps) {
-  const resolvedParams = use(paramsPromise); // Unwrap the Promise using React.use()
-  const { experienceId } = resolvedParams; // Destructure from resolved params
+  const resolvedParams = use(paramsPromise); 
+  const { experienceId } = resolvedParams; 
 
   const experience = mockExperience; 
   const router = useRouter();
@@ -92,7 +102,6 @@ export default function BookingProcessPage({ params: paramsPromise }: BookingPro
     
     console.log({ experienceId, selectedDate, selectedTime, numberOfGuests, totalPrice, paymentMethod });
     
-    // Simulate payment success for demo
     const paymentSuccess = true; 
 
     if (paymentSuccess) {
@@ -108,7 +117,7 @@ export default function BookingProcessPage({ params: paramsPromise }: BookingPro
   
   const availableDatesObjects = experience.availableDates.map(dateStr => parseISO(dateStr));
   const today = new Date();
-  today.setHours(0,0,0,0); // Ensure comparison is for date only, not time
+  today.setHours(0,0,0,0); 
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -276,7 +285,7 @@ export default function BookingProcessPage({ params: paramsPromise }: BookingPro
                 </div>
                 <div className="flex justify-between items-center text-sm text-muted-foreground">
                   <span>رسوم الخدمة والضرائب</span>
-                  <span className="font-semibold">0 {experience.currency}</span> {/* Placeholder */}
+                  <span className="font-semibold">0 {experience.currency}</span> 
                 </div>
                 <hr className="border-dashed"/>
                 <div className="flex justify-between items-center text-xl font-bold text-primary">
@@ -305,5 +314,3 @@ export default function BookingProcessPage({ params: paramsPromise }: BookingPro
     </div>
   );
 }
-
-      
