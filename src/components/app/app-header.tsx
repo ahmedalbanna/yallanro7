@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -47,59 +48,61 @@ const NavLinks: React.FC<{ isMobile?: boolean; onLinkClick?: () => void }> = ({ 
         </Button>
       )}
       {isMobile && currentUser && (
-        <>
-          <DropdownMenuSeparator className="my-2" />
-          <DropdownMenuLabel className="font-body">القائمة</DropdownMenuLabel>
-          <DropdownMenuItem asChild onClick={handleLinkClick}>
+        <div className="flex flex-col space-y-1">
+          <div className="my-1 border-t border-border -mx-2"></div>
+          <div className="px-2 py-1.5 text-sm font-semibold font-body text-foreground/70">القائمة</div>
+
+          <Button asChild variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={handleLinkClick}>
             <Link href="/profile">
               <UserCircle className="ml-2 h-4 w-4" />
               <span>الملف الشخصي</span>
             </Link>
-          </DropdownMenuItem>
+          </Button>
+
           {currentUser.role === 'client' && (
-            <DropdownMenuItem asChild onClick={handleLinkClick}>
+            <Button asChild variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={handleLinkClick}>
                 <Link href="/my-bookings">
                 <LayoutDashboard className="ml-2 h-4 w-4" />
                 <span>حجوزاتي</span>
               </Link>
-            </DropdownMenuItem>
+            </Button>
           )}
           {currentUser.role === 'host' && (
             <>
-              <DropdownMenuItem asChild onClick={handleLinkClick}>
+              <Button asChild variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={handleLinkClick}>
                 <Link href="/host/dashboard">
                   <LayoutDashboard className="ml-2 h-4 w-4" />
                   <span>لوحة التحكم</span>
                 </Link>
-              </DropdownMenuItem>
-                <DropdownMenuItem asChild onClick={handleLinkClick}>
+              </Button>
+                <Button asChild variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={handleLinkClick}>
                 <Link href="/host/listings">
                   <LayoutDashboard className="ml-2 h-4 w-4" />
                   <span>تجاربي</span>
                 </Link>
-              </DropdownMenuItem>
-                <DropdownMenuItem asChild onClick={handleLinkClick}>
+              </Button>
+                <Button asChild variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={handleLinkClick}>
                 <Link href="/host/bookings">
                   <Users className="ml-2 h-4 w-4" />
                   <span>إدارة الحجوزات</span>
                 </Link>
-              </DropdownMenuItem>
+              </Button>
             </>
           )}
           {currentUser.role === 'admin' && (
-              <DropdownMenuItem asChild onClick={handleLinkClick}>
+              <Button asChild variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={handleLinkClick}>
                 <Link href="/admin/dashboard">
                   <LayoutDashboard className="ml-2 h-4 w-4" />
                   <span>لوحة التحكم</span>
                 </Link>
-              </DropdownMenuItem>
+              </Button>
           )}
-           <DropdownMenuSeparator className="my-2" />
-           <DropdownMenuItem onClick={handleLinkClick}>
+           <div className="my-1 border-t border-border -mx-2"></div>
+           <Button variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto font-body" onClick={handleLinkClick}> {/* Logout action */}
             <LogOut className="ml-2 h-4 w-4" />
             <span>تسجيل الخروج</span>
-          </DropdownMenuItem>
-        </>
+          </Button>
+        </div>
       )}
     </>
   );
@@ -250,3 +253,4 @@ export function AppHeader() {
     </header>
   );
 }
+
