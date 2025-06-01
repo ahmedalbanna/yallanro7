@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, List, MapPinIcon, TagIcon, Image as ImageIcon, CalendarDays, ClockIcon, Users, CheckSquare } from "lucide-react";
+import React from "react"; // Added React import
 
 interface ExperienceFormProps {
   mode: 'create' | 'edit';
