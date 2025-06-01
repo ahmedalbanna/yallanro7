@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppHeader } from "@/components/app/app-header";
@@ -5,18 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, Paperclip, ArrowRight } from "lucide-react";
-import React, { useState, useEffect, useRef, use } from "react"; // Import 'use'
+import React, { useState, useEffect, useRef, use } from "react";
 import type { Message } from "@/models";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 
+const baseTimestamp = new Date('2024-07-30T12:00:00.000Z'); // A fixed point in time
+
 const mockMessages: Message[] = [
-  { messageId: 'm1', senderRef: 'user2', receiverRef: 'user1', content: 'مرحباً! لدي استفسار بخصوص الحجز رقم #EXP123.', timestamp: new Date(Date.now() - 1000 * 60 * 50) },
-  { messageId: 'm2', senderRef: 'user1', receiverRef: 'user2', content: 'أهلاً بك! تفضل بسؤالك. كيف يمكنني مساعدتك اليوم؟', timestamp: new Date(Date.now() - 1000 * 60 * 45) },
-  { messageId: 'm3', senderRef: 'user2', receiverRef: 'user1', content: 'هل يمكن تعديل عدد الضيوف؟ كنا شخصين ونريد إضافة شخص ثالث.', timestamp: new Date(Date.now() - 1000 * 60 * 20) },
-  { messageId: 'm4', senderRef: 'user1', receiverRef: 'user2', content: 'نعم، يمكن ذلك قبل 24 ساعة من موعد التجربة. سأقوم بتحديث الحجز. هل هناك أي شيء آخر؟', timestamp: new Date(Date.now() - 1000 * 60 * 10) },
-  { messageId: 'm5', senderRef: 'user2', receiverRef: 'user1', content: 'شكراً جزيلاً! هذا كل شيء.', timestamp: new Date(Date.now() - 1000 * 60 * 5) },
-  { messageId: 'm6', senderRef: 'user1', receiverRef: 'user2', content: 'على الرحب والسعة! نتطلع لاستقبالكم.', timestamp: new Date(Date.now() - 1000 * 60 * 2) },
+  { messageId: 'm1', senderRef: 'user2', receiverRef: 'user1', content: 'مرحباً! لدي استفسار بخصوص الحجز رقم #EXP123.', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 50) },
+  { messageId: 'm2', senderRef: 'user1', receiverRef: 'user2', content: 'أهلاً بك! تفضل بسؤالك. كيف يمكنني مساعدتك اليوم؟', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 45) },
+  { messageId: 'm3', senderRef: 'user2', receiverRef: 'user1', content: 'هل يمكن تعديل عدد الضيوف؟ كنا شخصين ونريد إضافة شخص ثالث.', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 20) },
+  { messageId: 'm4', senderRef: 'user1', receiverRef: 'user2', content: 'نعم، يمكن ذلك قبل 24 ساعة من موعد التجربة. سأقوم بتحديث الحجز. هل هناك أي شيء آخر؟', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 10) },
+  { messageId: 'm5', senderRef: 'user2', receiverRef: 'user1', content: 'شكراً جزيلاً! هذا كل شيء.', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 5) },
+  { messageId: 'm6', senderRef: 'user1', receiverRef: 'user2', content: 'على الرحب والسعة! نتطلع لاستقبالكم.', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 2) },
 ];
 const currentUser = { uid: 'user1', displayName: "أنا", photoUrl: "https://placehold.co/40x40.png?text=Me&font=belleza" }; 
 const otherUser = { uid: 'user2', displayName: "أحمد المضيف", photoUrl: "https://placehold.co/40x40.png?text=Host&font=belleza" };
@@ -34,6 +37,15 @@ export default function ChatPage({ params: paramsPromise }: ChatPageProps) {
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [newMessage, setNewMessage] = useState("");
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
+  const [formattedTimestamps, setFormattedTimestamps] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const newFormattedTimestamps: Record<string, string> = {};
+    messages.forEach(msg => {
+      newFormattedTimestamps[msg.messageId] = new Date(msg.timestamp).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+    });
+    setFormattedTimestamps(newFormattedTimestamps);
+  }, [messages]);
 
   const scrollToBottom = () => {
     if (scrollAreaViewportRef.current) {
@@ -43,11 +55,10 @@ export default function ChatPage({ params: paramsPromise }: ChatPageProps) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, formattedTimestamps]); // also scroll when timestamps are populated
   
-  // Initial scroll to bottom
   useEffect(() => {
-    setTimeout(scrollToBottom, 100);
+    setTimeout(scrollToBottom, 100); // Initial scroll
   }, []);
 
 
@@ -105,7 +116,7 @@ export default function ChatPage({ params: paramsPromise }: ChatPageProps) {
                 >
                 <p className="text-sm font-body break-words whitespace-pre-wrap">{msg.content}</p>
                 <p className={`text-[0.7rem] mt-1.5 ${msg.senderRef === currentUser.uid ? 'text-primary-foreground/70 text-left' : 'text-muted-foreground text-right'}`}>
-                    {new Date(msg.timestamp).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                    {formattedTimestamps[msg.messageId] || ''}
                 </p>
                 </div>
             </div>

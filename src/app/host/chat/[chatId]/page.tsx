@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppHeader } from "@/components/app/app-header";
@@ -10,15 +11,15 @@ import type { Message } from "@/models";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 
-// Mock data specific to host's perspective
+const baseTimestamp = new Date('2024-07-30T12:00:00.000Z'); // A fixed point in time
+
 const mockHostMessages: Message[] = [
-  { messageId: 'hm1', senderRef: 'clientUserX', receiverRef: 'hostUserY', content: 'مرحباً أيها المضيف، لدي سؤال بخصوص تجربتك "رحلة سفاري".', timestamp: new Date(Date.now() - 1000 * 60 * 60) },
-  { messageId: 'hm2', senderRef: 'hostUserY', receiverRef: 'clientUserX', content: 'أهلاً بك! تفضل، كيف يمكنني مساعدتك بخصوص رحلة السفاري؟', timestamp: new Date(Date.now() - 1000 * 60 * 55) },
-  { messageId: 'hm3', senderRef: 'clientUserX', receiverRef: 'hostUserY', content: 'هل التجربة مناسبة للأطفال بعمر 8 سنوات؟', timestamp: new Date(Date.now() - 1000 * 60 * 30) },
-  { messageId: 'hm4', senderRef: 'hostUserY', receiverRef: 'clientUserX', content: 'نعم، التجربة مناسبة وآمنة للأطفال فوق 6 سنوات. نوفر مقاعد خاصة لهم.', timestamp: new Date(Date.now() - 1000 * 60 * 25) },
+  { messageId: 'hm1', senderRef: 'clientUserX', receiverRef: 'hostUserY', content: 'مرحباً أيها المضيف، لدي سؤال بخصوص تجربتك "رحلة سفاري".', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 60) },
+  { messageId: 'hm2', senderRef: 'hostUserY', receiverRef: 'clientUserX', content: 'أهلاً بك! تفضل، كيف يمكنني مساعدتك بخصوص رحلة السفاري؟', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 55) },
+  { messageId: 'hm3', senderRef: 'clientUserX', receiverRef: 'hostUserY', content: 'هل التجربة مناسبة للأطفال بعمر 8 سنوات؟', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 30) },
+  { messageId: 'hm4', senderRef: 'hostUserY', receiverRef: 'clientUserX', content: 'نعم، التجربة مناسبة وآمنة للأطفال فوق 6 سنوات. نوفر مقاعد خاصة لهم.', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 25) },
 ];
 
-// Host is 'currentUser' in this context
 const currentHost = { uid: 'hostUserY', displayName: "أنا (المضيف)", photoUrl: "https://placehold.co/40x40.png?text=Me&font=belleza" }; 
 const clientUser = { uid: 'clientUserX', displayName: "فهد العميل", photoUrl: "https://placehold.co/40x40.png?text=Client&font=belleza" };
 
@@ -31,6 +32,15 @@ export default function HostChatPage({ params }: HostChatPageProps) {
   const [messages, setMessages] = useState<Message[]>(mockHostMessages);
   const [newMessage, setNewMessage] = useState("");
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
+  const [formattedTimestamps, setFormattedTimestamps] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const newFormattedTimestamps: Record<string, string> = {};
+    messages.forEach(msg => {
+      newFormattedTimestamps[msg.messageId] = new Date(msg.timestamp).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+    });
+    setFormattedTimestamps(newFormattedTimestamps);
+  }, [messages]);
 
   const scrollToBottom = () => {
     if (scrollAreaViewportRef.current) {
@@ -40,7 +50,7 @@ export default function HostChatPage({ params }: HostChatPageProps) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, formattedTimestamps]);
 
   useEffect(() => {
     setTimeout(scrollToBottom, 100);
@@ -53,8 +63,8 @@ export default function HostChatPage({ params }: HostChatPageProps) {
     const msg: Message = {
       messageId: `hm${messages.length + 1}`,
       senderRef: currentHost.uid,
-      receiverRef: clientUser.uid, // Sending to the client
-      bookingRef: chatId.startsWith('booking-') ? chatId.substring(8) : undefined, // Assuming chatId might relate to a booking
+      receiverRef: clientUser.uid, 
+      bookingRef: chatId.startsWith('booking-') ? chatId.substring(8) : undefined,
       content: newMessage,
       timestamp: new Date(),
     };
@@ -64,10 +74,10 @@ export default function HostChatPage({ params }: HostChatPageProps) {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <AppHeader /> {/* Assuming AppHeader adapts to host role */}
+      <AppHeader /> 
       <div className="border-b p-3 sm:p-4 flex items-center gap-3 bg-card sticky top-16 z-40 shadow-sm">
          <Button variant="ghost" size="icon" className="md:hidden" asChild>
-            <Link href="/host/bookings"> {/* Or previous page for host */}
+            <Link href="/host/bookings"> 
                 <ArrowRight className="h-5 w-5" />
             </Link>
         </Button>
@@ -77,7 +87,6 @@ export default function HostChatPage({ params }: HostChatPageProps) {
         </Avatar>
         <div>
           <h2 className="font-semibold font-body text-base sm:text-lg">{clientUser.displayName}</h2>
-          {/* Could show client's last active status if available */}
           <p className="text-xs text-muted-foreground">العميل</p>
         </div>
          {chatId.startsWith('booking-') &&
@@ -102,7 +111,7 @@ export default function HostChatPage({ params }: HostChatPageProps) {
                 >
                 <p className="text-sm font-body break-words whitespace-pre-wrap">{msg.content}</p>
                 <p className={`text-[0.7rem] mt-1.5 ${msg.senderRef === currentHost.uid ? 'text-primary-foreground/70 text-left' : 'text-muted-foreground text-right'}`}>
-                    {new Date(msg.timestamp).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                   {formattedTimestamps[msg.messageId] || ''}
                 </p>
                 </div>
             </div>
