@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, Paperclip, ArrowRight } from "lucide-react";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, use } from "react"; // Import 'use'
 import type { Message } from "@/models";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
@@ -21,12 +21,16 @@ const mockMessages: Message[] = [
 const currentUser = { uid: 'user1', displayName: "أنا", photoUrl: "https://placehold.co/40x40.png?text=Me&font=belleza" }; 
 const otherUser = { uid: 'user2', displayName: "أحمد المضيف", photoUrl: "https://placehold.co/40x40.png?text=Host&font=belleza" };
 
+interface PageResolvedParams {
+  chatId: string;
+}
 interface ChatPageProps {
-  params: { chatId: string };
+  params: Promise<PageResolvedParams>;
 }
 
-export default function ChatPage({ params }: ChatPageProps) {
-  const { chatId } = params; 
+export default function ChatPage({ params: paramsPromise }: ChatPageProps) {
+  const resolvedParams = use(paramsPromise);
+  const { chatId } = resolvedParams; 
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [newMessage, setNewMessage] = useState("");
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
