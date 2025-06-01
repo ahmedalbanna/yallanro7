@@ -1,9 +1,10 @@
+
 import { AppHeader } from "@/components/app/app-header";
 import { PlaceholderContent } from "@/components/app/placeholder-content";
 import { StatsCard } from "@/components/app/stats-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Users, Layers, BookOpen, DollarSign, Settings, BarChart3, Map, TagIcon } from "lucide-react";
+import { Users, Layers, BookOpen, DollarSign, Settings, BarChart3, MapPin, TagIcon } from "lucide-react"; // Corrected Map to MapPin and Tag to TagIcon
 
 export default function AdminDashboardPage() {
   // Mock data for stats cards
