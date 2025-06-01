@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from "react"; // Added React import
 import { AppHeader } from "@/components/app/app-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { User } from "@/models";
-import { UserPlus, Mail, Lock, UserCog as UserRoleIcon } from "lucide-react"; // Added icons
+import { UserPlus, Mail, Lock, UserCog as UserRoleIcon } from "lucide-react";
 
 const roles: [User['role'], ...User['role'][]] = ['client', 'host', 'admin'];
 
@@ -151,4 +152,3 @@ export default function AddNewUserPage() {
     </div>
   );
 }
-
