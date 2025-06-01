@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { AppHeader } from "@/components/app/app-header";
 import { ExperienceCard } from "@/components/app/experience-card";
 import { CategoryChip } from "@/components/app/category-chip";
@@ -11,29 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapPin, Search } from "lucide-react";
 import type { Experience, Category, City } from "@/models"; 
 
-// Export mock data so other components/pages can import it for now
-export const mockExperiences: Experience[] = Array(8).fill(null).map((_, i) => ({
-  experienceId: `exp${i + 1}`,
-  title: `تجربة مذهلة في ${i % 2 === 0 ? 'الرياض' : 'جدة'} رقم ${i + 1}`,
-  description: 'وصف قصير ومثير لهذه التجربة الفريدة من نوعها التي تستكشف معالم المدينة وتقدم أنشطة متنوعة.',
-  activities: ['نشاط رئيسي', 'جولة استكشافية', 'تذوق أطعمة محلية'],
-  images: [`https://placehold.co/600x400.png?text=Exp+${i + 1}&font=belleza`, `https://placehold.co/600x400.png?text=Image+${i+1}B&font=belleza` ],
-  price: Math.floor(Math.random() * 200) + 100,
-  currency: 'ر.س',
-  duration: `${Math.floor(Math.random() * 3) + 2} ساعات`,
-  maxGuests: Math.floor(Math.random() * 6) + 2,
-  location: { lat: 24.7136 + (Math.random()-0.5)*2, lng: 46.6753 + (Math.random()-0.5)*2 }, 
-  address: `عنوان افتراضي ${i + 1}, ${i % 2 === 0 ? 'الرياض' : 'جدة'}`,
-  city: i % 2 === 0 ? 'الرياض' : 'جدة',
-  categoryRef: `cat${(i % 3) + 1}`, 
-  hostRef: `host${i + 1}`,
-  availableDates: [],
-  availableTimes: [],
-  isActive: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-}));
-
+// Category and City mocks can stay as they are.
 export const mockCategories: Category[] = [
   { categoryId: 'cat1', name: 'مغامرات', iconUrl: 'Activity' },
   { categoryId: 'cat2', name: 'طبخ', iconUrl: 'CookingPot' },
@@ -52,27 +30,54 @@ export const mockCities: City[] = [
 
 
 export default function HomePage() {
+  const [displayedExperiences, setDisplayedExperiences] = useState<Experience[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState("all"); // 'all' or city name
   const [selectedCategory, setSelectedCategory] = useState("all"); // 'all' or categoryId
 
+  useEffect(() => {
+    // Generate experiences with random values on the client side after mount
+    const generatedExperiences = Array(8).fill(null).map((_, i) => {
+      const now = new Date(); // Consistent for this batch
+      return {
+        experienceId: `exp${i + 1}`,
+        title: `تجربة مذهلة في ${i % 2 === 0 ? 'الرياض' : 'جدة'} رقم ${i + 1}`,
+        description: 'وصف قصير ومثير لهذه التجربة الفريدة من نوعها التي تستكشف معالم المدينة وتقدم أنشطة متنوعة.',
+        activities: ['نشاط رئيسي', 'جولة استكشافية', 'تذوق أطعمة محلية'],
+        images: [`https://placehold.co/600x400.png?text=Exp+${i + 1}&font=belleza`, `https://placehold.co/600x400.png?text=Image+${i+1}B&font=belleza` ],
+        price: Math.floor(Math.random() * 200) + 100,
+        currency: 'ر.س',
+        duration: `${Math.floor(Math.random() * 3) + 2} ساعات`,
+        maxGuests: Math.floor(Math.random() * 6) + 2,
+        location: { lat: 24.7136 + (Math.random()-0.5)*2, lng: 46.6753 + (Math.random()-0.5)*2 }, 
+        address: `عنوان افتراضي ${i + 1}, ${i % 2 === 0 ? 'الرياض' : 'جدة'}`,
+        city: i % 2 === 0 ? 'الرياض' : 'جدة',
+        categoryRef: `cat${(i % 3) + 1}`, 
+        hostRef: `host${i + 1}`,
+        availableDates: [],
+        availableTimes: [],
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
+    setDisplayedExperiences(generatedExperiences);
+  }, []); // Empty dependency array, runs once on mount
+
   const filteredExperiences = useMemo(() => {
-    return mockExperiences.filter(exp => {
+    return displayedExperiences.filter(exp => {
       const matchesSearch = searchTerm === "" || exp.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCity = selectedCity === "all" || exp.city === selectedCity;
       const matchesCategory = selectedCategory === "all" || exp.categoryRef === selectedCategory;
       return matchesSearch && matchesCity && matchesCategory;
     });
-  }, [searchTerm, selectedCity, selectedCategory]);
+  }, [searchTerm, selectedCity, selectedCategory, displayedExperiences]);
 
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategory(categoryId);
   };
   
-  // The search button click can explicitly trigger filtering or can be removed if filtering is dynamic.
-  // For now, filtering is dynamic on input/select change.
   const handleSearchButtonClick = () => {
-    // Logic to explicitly trigger search if needed, for now it's dynamic
     console.log("Search button clicked with: ", { searchTerm, selectedCity, selectedCategory });
   }
 
@@ -175,7 +180,7 @@ export default function HomePage() {
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-10 text-lg font-body">
-                لا توجد تجارب تطابق معايير البحث الحالية. حاول تعديل بحثك.
+                {displayedExperiences.length === 0 ? "جاري تحميل التجارب..." : "لا توجد تجارب تطابق معايير البحث الحالية. حاول تعديل بحثك."}
               </p>
             )}
           </section>
@@ -189,5 +194,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
