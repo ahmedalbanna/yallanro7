@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppHeader } from "@/components/app/app-header";
@@ -14,7 +15,7 @@ import Link from "next/link";
 import { CalendarIcon, Users, Clock, CreditCard, Minus, Plus, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { arSA } from "date-fns/locale";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react"; // Import 'use'
 import type { Experience } from "@/models";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
@@ -31,12 +32,18 @@ const mockExperience: Experience = {
   description: '', activities: [], duration: '', location: {lat:0, lng:0}, address: '', city: '', categoryRef: '', hostRef: '', isActive: true, createdAt: new Date(), updatedAt: new Date()
 };
 
-interface BookingProcessPageProps {
-  params: { experienceId: string };
+interface PageResolvedParams {
+  experienceId: string;
 }
 
-export default function BookingProcessPage({ params }: BookingProcessPageProps) {
-  const { experienceId } = params;
+interface BookingProcessPageProps {
+  params: Promise<PageResolvedParams>; // Type incoming params as a Promise
+}
+
+export default function BookingProcessPage({ params: paramsPromise }: BookingProcessPageProps) {
+  const resolvedParams = use(paramsPromise); // Unwrap the Promise using React.use()
+  const { experienceId } = resolvedParams; // Destructure from resolved params
+
   const experience = mockExperience; 
   const router = useRouter();
   const { toast } = useToast();
@@ -298,3 +305,5 @@ export default function BookingProcessPage({ params }: BookingProcessPageProps) 
     </div>
   );
 }
+
+      
