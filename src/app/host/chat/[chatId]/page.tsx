@@ -5,7 +5,7 @@ import { AppHeader } from "@/components/app/app-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, Paperclip, ArrowRight, Image as ImageIcon, FileText, Loader2 } from "lucide-react";
+import { Send, Paperclip, ArrowRight, Image as ImageIcon, FileText, Loader2, MapPin, Mic } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import type { Message } from "@/models";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
@@ -36,8 +37,10 @@ interface HostChatPageProps {
 }
 
 interface ChatMessage extends Message {
-  type?: 'text' | 'file_upload_pending' | 'image_upload_pending';
+  type?: 'text' | 'file_upload_pending' | 'image_upload_pending' | 'location_shared' | 'voice_message';
   fileName?: string;
+  mediaUrl?: string; // For location link or voice file
+  duration?: string; // For voice message
 }
 
 export default function HostChatPage({ params }: HostChatPageProps) {
@@ -78,7 +81,7 @@ export default function HostChatPage({ params }: HostChatPageProps) {
     e.preventDefault();
     if (newMessage.trim() === "") return;
     const msg: ChatMessage = {
-      messageId: `hm${messages.length + 1}`,
+      messageId: `msg-${Date.now()}`,
       senderRef: currentHost.uid,
       receiverRef: clientUser.uid, 
       bookingRef: chatId.startsWith('booking-') ? chatId.substring(8) : undefined,
@@ -93,8 +96,9 @@ export default function HostChatPage({ params }: HostChatPageProps) {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'file') => {
     const file = event.target.files?.[0];
     if (file) {
+      const pendingMessageId = `pending-${type}-${Date.now()}`;
       const pendingMessage: ChatMessage = {
-        messageId: `pending-${type}-${Date.now()}`,
+        messageId: pendingMessageId,
         senderRef: currentHost.uid,
         receiverRef: clientUser.uid,
         content: `جاري إرسال ${type === 'image' ? 'الصورة' : 'الملف'}: ${file.name}`,
@@ -111,13 +115,71 @@ export default function HostChatPage({ params }: HostChatPageProps) {
 
       setTimeout(() => {
         setMessages(prevMessages => prevMessages.map(m => 
-          m.messageId === pendingMessage.messageId 
-          ? {...m, content: `${type === 'image' ? 'الصورة' : 'الملف'} "${file.name}" تم إرسالها (محاكاة).`} 
+          m.messageId === pendingMessageId 
+          ? {...m, content: `${type === 'image' ? 'الصورة' : 'الملف'} "${file.name}" تم إرسالها بنجاح (محاكاة).`, type: 'text'} 
           : m
         ));
       }, 2000);
     }
   };
+
+  const handleSimulatedAction = (actionType: 'location' | 'voice') => {
+    const actionId = `sim-${actionType}-${Date.now()}`;
+    let initialContent = "";
+    let toastTitle = "";
+    let toastDescription = "";
+
+    if (actionType === 'location') {
+      initialContent = "جاري تحديد الموقع...";
+      toastTitle = "مشاركة الموقع";
+      toastDescription = "جاري طلب إذن الموقع... (محاكاة)";
+    } else { // voice
+      initialContent = "جاري بدء التسجيل الصوتي...";
+      toastTitle = "تسجيل صوتي";
+      toastDescription = "جاري بدء التسجيل... (محاكاة)";
+    }
+
+    const pendingMessage: ChatMessage = {
+      messageId: actionId,
+      senderRef: currentHost.uid,
+      receiverRef: clientUser.uid,
+      content: initialContent,
+      timestamp: new Date(),
+      type: 'text', 
+    };
+    setMessages(prev => [...prev, pendingMessage]);
+    toast({ title: toastTitle, description: toastDescription });
+
+    setTimeout(() => {
+      let finalContent = "";
+      let finalToastDescription = "";
+      let finalType: ChatMessage['type'] = 'text';
+      let finalMediaUrl: string | undefined = undefined;
+      let finalDuration: string | undefined = undefined;
+
+      if (actionType === 'location') {
+        finalContent = "تمت مشاركة الموقع بنجاح.";
+        finalMediaUrl = `https://maps.example.com/?lat=${(Math.random()*90).toFixed(6)}&lng=${(Math.random()*180).toFixed(6)}`;
+        finalType = 'location_shared';
+        finalToastDescription = "تمت مشاركة الموقع (محاكاة).";
+      } else { // voice
+        const durationSeconds = Math.floor(Math.random() * 50) + 10; // 10-60 seconds
+        finalDuration = `0:${durationSeconds < 10 ? '0' : ''}${durationSeconds}`;
+        finalContent = `تسجيل صوتي (${finalDuration})`;
+        finalMediaUrl = `#`; 
+        finalType = 'voice_message';
+        finalToastDescription = "تم إرسال التسجيل الصوتي (محاكاة).";
+      }
+
+      setMessages(prev => prev.map(m => 
+        m.messageId === actionId 
+        ? {...m, content: finalContent, type: finalType, mediaUrl: finalMediaUrl, duration: finalDuration }
+        : m
+      ));
+      toast({ title: toastTitle, description: finalToastDescription });
+    }, 2500);
+  };
+
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -161,6 +223,15 @@ export default function HostChatPage({ params }: HostChatPageProps) {
                         <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                         <span className="text-sm font-body italic">{msg.content}</span>
                     </div>
+                ) : msg.type === 'location_shared' && msg.mediaUrl ? (
+                    <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-body underline hover:opacity-80 flex items-center">
+                        <MapPin className="ml-2 h-4 w-4" /> {msg.content}
+                    </a>
+                ) : msg.type === 'voice_message' ? (
+                     <div className="flex items-center text-sm font-body">
+                        <Mic className="ml-2 h-4 w-4" /> {msg.content}
+                        {msg.mediaUrl && <Button variant="link" size="sm" asChild className="p-0 h-auto mr-2"><a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">(تشغيل)</a></Button>}
+                    </div>
                 ) : (
                     <p className="text-sm font-body break-words whitespace-pre-wrap">{msg.content}</p>
                 )}
@@ -190,6 +261,15 @@ export default function HostChatPage({ params }: HostChatPageProps) {
               <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
                 <FileText className="ml-2 h-4 w-4 text-green-500" />
                 إرفاق ملف
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => handleSimulatedAction('location')}>
+                <MapPin className="ml-2 h-4 w-4 text-orange-500" />
+                مشاركة الموقع (محاكاة)
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => handleSimulatedAction('voice')}>
+                <Mic className="ml-2 h-4 w-4 text-purple-500" />
+                تسجيل صوتي (محاكاة)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
