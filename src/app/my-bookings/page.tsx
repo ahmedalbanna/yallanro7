@@ -1,18 +1,20 @@
+
 "use client";
 
 import { AppHeader } from "@/components/app/app-header";
 import { BookingCard } from "@/components/app/booking-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Booking, Experience, User } from "@/models";
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { parseISO } from "date-fns";
 
 const mockBookingsData: Booking[] = [
   { bookingId: 'b1', experienceRef: 'exp1', clientRef: 'user1', hostRef: 'host1', bookingDate: parseISO('2024-09-20T10:00:00'), bookingTime: '10:00 ص', numberOfGuests: 2, totalPrice: 700, status: 'confirmed', paymentStatus: 'paid', createdAt: new Date() },
   { bookingId: 'b2', experienceRef: 'exp2', clientRef: 'user1', hostRef: 'host2', bookingDate: parseISO('2024-07-15T14:00:00'), bookingTime: '02:00 م', numberOfGuests: 1, totalPrice: 150, status: 'completed', paymentStatus: 'paid', createdAt: new Date() },
   { bookingId: 'b3', experienceRef: 'exp3', clientRef: 'user1', hostRef: 'host3', bookingDate: parseISO('2024-09-25T18:00:00'), bookingTime: '06:00 م', numberOfGuests: 4, totalPrice: 600, status: 'pending', paymentStatus: 'pending', createdAt: new Date() },
-  { bookingId: 'b4', experienceRef: 'exp4', clientRef: 'user1', hostRef: 'host4', bookingDate: parseISO('2024-06-10T09:00:00'), bookingTime: '09:00 ص', numberOfGuests: 2, totalPrice: 400, status: 'cancelled', paymentStatus: 'paid', createdAt: new Date() },
+  { bookingId: 'b4', experienceRef: 'exp4', clientRef: 'user1', hostRef: 'host4', bookingDate: parseISO('2024-06-10T09:00:00'), bookingTime: '09:00 ص', numberOfGuests: 2, totalPrice: 400, status: 'cancelled', paymentStatus: 'paid', createdAt: new Date() }, // Past cancelled
   { bookingId: 'b5', experienceRef: 'exp1', clientRef: 'user1', hostRef: 'host1', bookingDate: parseISO('2024-10-05T16:00:00'), bookingTime: '04:00 م', numberOfGuests: 3, totalPrice: 1050, status: 'confirmed', paymentStatus: 'paid', createdAt: new Date() },
+  { bookingId: 'b6', experienceRef: 'exp2', clientRef: 'user1', hostRef: 'host2', bookingDate: parseISO('2024-10-10T11:00:00'), bookingTime: '11:00 ص', numberOfGuests: 1, totalPrice: 150, status: 'cancelled', paymentStatus: 'pending', createdAt: new Date() }, // Upcoming cancelled
 ];
 
 const mockExperiencesData: { [key: string]: Partial<Experience> } = {
@@ -31,20 +33,24 @@ const mockUsersData: { [key: string]: Partial<User> } = {
 
 export default function MyBookingsPage() {
   const now = new Date();
+  now.setHours(0,0,0,0); // Compare dates only, not time for 'upcoming' vs 'past' logic
 
   const upcomingBookings = useMemo(() => 
-    mockBookingsData.filter(b => (b.status === 'confirmed' || b.status === 'pending') && new Date(b.bookingDate) >= now)
-    .sort((a,b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime()), 
+    mockBookingsData
+      .filter(b => (b.status === 'confirmed' || b.status === 'pending') && new Date(b.bookingDate) >= now)
+      .sort((a,b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime()), 
   [now]);
 
   const pastBookings = useMemo(() => 
-    mockBookingsData.filter(b => b.status === 'completed' || ( (b.status === 'confirmed' || b.status === 'cancelled') && new Date(b.bookingDate) < now))
-    .sort((a,b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime()), 
+    mockBookingsData
+      .filter(b => b.status === 'completed' || ((b.status === 'confirmed' || b.status === 'cancelled') && new Date(b.bookingDate) < now))
+      .sort((a,b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime()), 
   [now]);
   
   const cancelledBookings = useMemo(() => 
-    mockBookingsData.filter(b => b.status === 'cancelled' && new Date(b.bookingDate) >= now) // Only show recently cancelled upcoming
-    .sort((a,b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime()),
+    mockBookingsData
+      .filter(b => b.status === 'cancelled' && new Date(b.bookingDate) >= now) // Only show upcoming/recent cancelled
+      .sort((a,b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime()),
   [now]);
 
 
