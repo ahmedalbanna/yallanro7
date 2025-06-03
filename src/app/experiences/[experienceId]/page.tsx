@@ -1,3 +1,4 @@
+
 import { AppHeader } from "@/components/app/app-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -145,8 +146,10 @@ export default function ExperienceDetailsPage({ params }: ExperienceDetailsPageP
                 </Avatar>
                 <div className="flex-grow">
                   <p className="text-foreground/80 leading-relaxed mb-4">{host.bio}</p>
-                  <Button variant="outline" size="sm" className="font-body border-border hover:bg-accent/10 hover:border-accent/50">
-                    <MessageSquare className="ml-2 h-4 w-4" /> تواصل مع {host.displayName}
+                  <Button asChild variant="outline" size="sm" className="font-body border-border hover:bg-accent/10 hover:border-accent/50">
+                    <Link href={`/chat/host-${host.uid}-exp-${experience.experienceId}`}>
+                      <MessageSquare className="ml-2 h-4 w-4" /> تواصل مع {host.displayName}
+                    </Link>
                   </Button>
                 </div>
               </CardContent>
@@ -226,3 +229,4 @@ export default function ExperienceDetailsPage({ params }: ExperienceDetailsPageP
     </div>
   );
 }
+
