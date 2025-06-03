@@ -165,7 +165,7 @@ export default function HostChatPage({ params }: HostChatPageProps) {
       } else { // voice
         const durationSeconds = Math.floor(Math.random() * 50) + 10; // 10-60 seconds
         finalDuration = `0:${durationSeconds < 10 ? '0' : ''}${durationSeconds}`;
-        finalContent = `تسجيل صوتي (${finalDuration})`;
+        finalContent = "رسالة صوتية"; // Simplified content
         finalMediaUrl = `#`; 
         finalType = 'voice_message';
         finalToastDescription = "تم إرسال التسجيل الصوتي (محاكاة).";
@@ -228,9 +228,15 @@ export default function HostChatPage({ params }: HostChatPageProps) {
                         <MapPin className="ml-2 h-4 w-4" /> {msg.content}
                     </a>
                 ) : msg.type === 'voice_message' ? (
-                     <div className="flex items-center text-sm font-body">
-                        <Mic className="ml-2 h-4 w-4" /> {msg.content}
-                        {msg.mediaUrl && <Button variant="link" size="sm" asChild className="p-0 h-auto mr-2"><a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">(تشغيل)</a></Button>}
+                     <div className="flex items-center text-sm font-body gap-2">
+                        <Mic className="h-4 w-4 shrink-0" />
+                        <span>{msg.content}</span> {/* "رسالة صوتية" */}
+                         <Button variant="outline" size="sm" asChild className="p-1.5 h-auto text-xs border-primary/30 hover:bg-primary/10">
+                            <a href={msg.mediaUrl || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                                <span>{msg.duration}</span>
+                            </a>
+                        </Button>
                     </div>
                 ) : (
                     <p className="text-sm font-body break-words whitespace-pre-wrap">{msg.content}</p>
