@@ -40,7 +40,7 @@ export interface Booking {
   numberOfGuests: number;
   totalPrice: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-  paymentStatus: 'pending' | 'paid' | 'failed';
+  paymentStatus: 'refunded' | 'pending' | 'paid' | 'failed';
   paymentDetails?: Record<string, any>;
   createdAt: Date;
 }

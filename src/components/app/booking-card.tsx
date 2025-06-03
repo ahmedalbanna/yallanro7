@@ -1,12 +1,20 @@
+
+"use client";
+
 import type { Booking, Experience, User } from "@/models";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Users, MessageSquare, Check, X, Hourglass, CheckCircle, XCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { CalendarDays, Users, MessageSquare, Check, X, Hourglass, CheckCircle, XCircle, Star } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { arSA } from "date-fns/locale";
+import React, { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface BookingCardProps {
   booking: Booking;
@@ -29,13 +37,14 @@ const getStatusTextAndIcon = (status: Booking['status']): { text: string; icon: 
     switch (status) {
         case 'pending': return { text: 'قيد الانتظار', icon: Hourglass };
         case 'confirmed': return { text: 'مؤكد', icon: CheckCircle };
-        case 'completed': return { text: 'مكتمل', icon: CheckCircle }; // Could be a different icon for completed
+        case 'completed': return { text: 'مكتمل', icon: CheckCircle };
         case 'cancelled': return { text: 'ملغى', icon: XCircle };
         default: return { text: status, icon: Hourglass };
     }
 }
 
 export function BookingCard({ booking, experience, relatedUser, currentUserRole }: BookingCardProps) {
+  const { toast } = useToast();
   const experienceTitle = experience?.title || "تجربة محجوزة";
   const experienceImage = experience?.images?.[0] || "https://placehold.co/300x200.png?text=Booking&font=belleza";
   const relatedUserName = relatedUser?.displayName || (currentUserRole === 'client' ? "المضيف" : "العميل");
@@ -43,6 +52,40 @@ export function BookingCard({ booking, experience, relatedUser, currentUserRole 
 
   const bookingDate = typeof booking.bookingDate === 'string' ? parseISO(booking.bookingDate) : booking.bookingDate;
 
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [currentRating, setCurrentRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [hasBeenReviewed, setHasBeenReviewed] = useState(false); // Simulate if review was submitted
+
+  const handleStarClick = (rating: number) => {
+    setCurrentRating(rating);
+  };
+
+  const handleReviewSubmit = () => {
+    if (currentRating === 0) {
+      toast({
+        title: "خطأ",
+        description: "الرجاء اختيار تقييم (عدد النجوم).",
+        variant: "destructive",
+      });
+      return;
+    }
+    console.log("Review Submitted:", {
+      bookingId: booking.bookingId,
+      experienceId: booking.experienceRef,
+      rating: currentRating,
+      comment: reviewComment,
+    });
+    toast({
+      title: "تم إرسال التقييم!",
+      description: "شكراً لك على تقييم التجربة.",
+    });
+    setHasBeenReviewed(true);
+    setIsReviewDialogOpen(false);
+    // Reset for next time, or fetch actual review status
+    // setCurrentRating(0); 
+    // setReviewComment("");
+  };
 
   return (
     <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-xl overflow-hidden border-primary/10 flex flex-col h-full">
@@ -53,7 +96,7 @@ export function BookingCard({ booking, experience, relatedUser, currentUserRole 
             alt={experienceTitle}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
-            data-ai-hint="booked experience"
+            data-ai-hint="booked experience event"
           />
         </Link>
          <Badge 
@@ -86,10 +129,61 @@ export function BookingCard({ booking, experience, relatedUser, currentUserRole 
       </CardContent>
       <CardFooter className="p-4 border-t flex flex-wrap gap-2 justify-between items-center font-body mt-auto">
         <Button variant="outline" size="sm" asChild className="border-border hover:bg-accent/10 hover:border-accent/50">
-          <Link href={`/chat/booking-${booking.bookingId}`}> {/* Example chat link */}
+          <Link href={`/${currentUserRole === 'host' ? 'host/' : ''}chat/booking-${booking.bookingId}`}>
             <MessageSquare className="ml-2 h-4 w-4" /> تواصل مع {relatedUserName}
           </Link>
         </Button>
+        
+        {currentUserRole === 'client' && booking.status === 'completed' && (
+          <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant={hasBeenReviewed ? "ghost" : "default"} size="sm" disabled={hasBeenReviewed} className={hasBeenReviewed ? "text-green-600 cursor-default" : ""}>
+                <Star className="ml-2 h-4 w-4" /> {hasBeenReviewed ? "تم التقييم" : "تقييم التجربة"}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[480px] font-body" dir="rtl">
+              <DialogHeader>
+                <DialogTitle className="font-headline text-2xl">تقييم تجربة: {experienceTitle}</DialogTitle>
+                <DialogDescription>
+                  شاركنا رأيك حول هذه التجربة لمساعدة الآخرين.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-6">
+                <div>
+                  <Label htmlFor="rating" className="block mb-2 text-base">تقييمك (من 5 نجوم):</Label>
+                  <div className="flex items-center justify-center gap-1 text-3xl text-amber-400 mb-2" id="rating">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button 
+                        key={star} 
+                        onClick={() => handleStarClick(star)} 
+                        className="focus:outline-none transition-transform hover:scale-110"
+                        aria-label={`تقييم ${star} نجوم`}
+                      >
+                        <Star className={`cursor-pointer ${currentRating >= star ? 'fill-current' : 'text-muted-foreground/30'}`} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="reviewComment" className="block mb-2 text-base">تعليقك:</Label>
+                  <Textarea
+                    id="reviewComment"
+                    placeholder="اكتب تعليقك هنا..."
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    className="min-h-[100px] bg-input focus:bg-background"
+                    rows={4}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+                <Button type="button" onClick={handleReviewSubmit}>إرسال التقييم</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
         {currentUserRole === 'host' && booking.status === 'pending' && (
           <div className="flex gap-2">
             <Button size="sm" variant="destructive" className="px-3">
