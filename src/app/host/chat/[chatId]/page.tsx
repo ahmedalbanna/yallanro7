@@ -5,15 +5,23 @@ import { AppHeader } from "@/components/app/app-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, Paperclip, ArrowRight } from "lucide-react";
+import { Send, Paperclip, ArrowRight, Image as ImageIcon, FileText, Loader2 } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import type { Message } from "@/models";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
-const baseTimestamp = new Date('2024-07-30T12:00:00.000Z'); // A fixed point in time
 
-const mockHostMessages: Message[] = [
+const baseTimestamp = new Date('2024-07-30T12:00:00.000Z'); 
+
+const mockHostMessagesData: Message[] = [
   { messageId: 'hm1', senderRef: 'clientUserX', receiverRef: 'hostUserY', content: 'مرحباً أيها المضيف، لدي سؤال بخصوص تجربتك "رحلة سفاري".', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 60) },
   { messageId: 'hm2', senderRef: 'hostUserY', receiverRef: 'clientUserX', content: 'أهلاً بك! تفضل، كيف يمكنني مساعدتك بخصوص رحلة السفاري؟', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 55) },
   { messageId: 'hm3', senderRef: 'clientUserX', receiverRef: 'hostUserY', content: 'هل التجربة مناسبة للأطفال بعمر 8 سنوات؟', timestamp: new Date(baseTimestamp.getTime() - 1000 * 60 * 30) },
@@ -27,12 +35,21 @@ interface HostChatPageProps {
   params: { chatId: string };
 }
 
+interface ChatMessage extends Message {
+  type?: 'text' | 'file_upload_pending' | 'image_upload_pending';
+  fileName?: string;
+}
+
 export default function HostChatPage({ params }: HostChatPageProps) {
   const { chatId } = params; 
-  const [messages, setMessages] = useState<Message[]>(mockHostMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>(mockHostMessagesData);
   const [newMessage, setNewMessage] = useState("");
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const [formattedTimestamps, setFormattedTimestamps] = useState<Record<string, string>>({});
+
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const newFormattedTimestamps: Record<string, string> = {};
@@ -60,16 +77,46 @@ export default function HostChatPage({ params }: HostChatPageProps) {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim() === "") return;
-    const msg: Message = {
+    const msg: ChatMessage = {
       messageId: `hm${messages.length + 1}`,
       senderRef: currentHost.uid,
       receiverRef: clientUser.uid, 
       bookingRef: chatId.startsWith('booking-') ? chatId.substring(8) : undefined,
       content: newMessage,
       timestamp: new Date(),
+      type: 'text',
     };
     setMessages([...messages, msg]);
     setNewMessage("");
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'file') => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const pendingMessage: ChatMessage = {
+        messageId: `pending-${type}-${Date.now()}`,
+        senderRef: currentHost.uid,
+        receiverRef: clientUser.uid,
+        content: `جاري إرسال ${type === 'image' ? 'الصورة' : 'الملف'}: ${file.name}`,
+        timestamp: new Date(),
+        type: type === 'image' ? 'image_upload_pending' : 'file_upload_pending',
+        fileName: file.name,
+      };
+      setMessages(prevMessages => [...prevMessages, pendingMessage]);
+      toast({
+        title: `تم اختيار ${type === 'image' ? 'صورة' : 'ملف'}`,
+        description: `${file.name} - سيتم الإرسال (محاكاة).`,
+      });
+      event.target.value = ""; 
+
+      setTimeout(() => {
+        setMessages(prevMessages => prevMessages.map(m => 
+          m.messageId === pendingMessage.messageId 
+          ? {...m, content: `${type === 'image' ? 'الصورة' : 'الملف'} "${file.name}" تم إرسالها (محاكاة).`} 
+          : m
+        ));
+      }, 2000);
+    }
   };
 
   return (
@@ -109,9 +156,16 @@ export default function HostChatPage({ params }: HostChatPageProps) {
                     : "bg-card text-card-foreground rounded-bl-none border"
                 }`}
                 >
-                <p className="text-sm font-body break-words whitespace-pre-wrap">{msg.content}</p>
+                {msg.type === 'file_upload_pending' || msg.type === 'image_upload_pending' ? (
+                    <div className="flex items-center">
+                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                        <span className="text-sm font-body italic">{msg.content}</span>
+                    </div>
+                ) : (
+                    <p className="text-sm font-body break-words whitespace-pre-wrap">{msg.content}</p>
+                )}
                 <p className={`text-[0.7rem] mt-1.5 ${msg.senderRef === currentHost.uid ? 'text-primary-foreground/70 text-left' : 'text-muted-foreground text-right'}`}>
-                   {formattedTimestamps[msg.messageId] || ''}
+                   {formattedTimestamps[msg.messageId] || new Date(msg.timestamp).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                 </p>
                 </div>
             </div>
@@ -121,10 +175,37 @@ export default function HostChatPage({ params }: HostChatPageProps) {
 
       <div className="border-t p-3 sm:p-4 bg-card sticky bottom-0">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2 sm:gap-3">
-          <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-            <Paperclip className="h-5 w-5 sm:h-6 sm:w-6" />
-             <span className="sr-only">إرفاق ملف</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+                <Paperclip className="h-5 w-5 sm:h-6 sm:w-6" />
+                <span className="sr-only">إرفاق</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="font-body w-56" dir="rtl">
+              <DropdownMenuItem onSelect={() => imageInputRef.current?.click()}>
+                <ImageIcon className="ml-2 h-4 w-4 text-blue-500" />
+                إرفاق صورة
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
+                <FileText className="ml-2 h-4 w-4 text-green-500" />
+                إرفاق ملف
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <input 
+            type="file" 
+            ref={imageInputRef} 
+            className="hidden" 
+            accept="image/*" 
+            onChange={(e) => handleFileSelect(e, 'image')}
+          />
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            onChange={(e) => handleFileSelect(e, 'file')}
+          />
           <Input
             type="text"
             placeholder="اكتب ردك هنا..."
@@ -142,3 +223,4 @@ export default function HostChatPage({ params }: HostChatPageProps) {
     </div>
   );
 }
+
