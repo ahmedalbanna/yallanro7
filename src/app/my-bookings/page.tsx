@@ -35,22 +35,22 @@ export default function MyBookingsPage() {
   const now = new Date();
   now.setHours(0,0,0,0); // Compare dates only, not time for 'upcoming' vs 'past' logic
 
-  const upcomingBookings = useMemo(() => 
+  const upcomingBookings = useMemo(() =>
     mockBookingsData
-      .filter(b => (b.status === 'confirmed' || b.status === 'pending') && new Date(b.bookingDate) >= now)
-      .sort((a,b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime()), 
+      .filter(b => (b.status === 'confirmed' || b.status === 'pending') && b.bookingDate >= now)
+      .sort((a,b) => a.bookingDate.getTime() - b.bookingDate.getTime()),
   [now]);
 
-  const pastBookings = useMemo(() => 
+  const pastBookings = useMemo(() =>
     mockBookingsData
-      .filter(b => b.status === 'completed' || ((b.status === 'confirmed' || b.status === 'cancelled') && new Date(b.bookingDate) < now))
-      .sort((a,b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime()), 
+      .filter(b => b.status === 'completed' || ((b.status === 'confirmed' || b.status === 'cancelled') && b.bookingDate < now))
+      .sort((a,b) => b.bookingDate.getTime() - a.bookingDate.getTime()),
   [now]);
-  
-  const cancelledBookings = useMemo(() => 
+
+  const cancelledBookings = useMemo(() =>
     mockBookingsData
-      .filter(b => b.status === 'cancelled' && new Date(b.bookingDate) >= now) // Only show upcoming/recent cancelled
-      .sort((a,b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime()),
+      .filter(b => b.status === 'cancelled' && b.bookingDate >= now) // Only show upcoming/recent cancelled
+      .sort((a,b) => a.bookingDate.getTime() - b.bookingDate.getTime()),
   [now]);
 
 
@@ -61,9 +61,9 @@ export default function MyBookingsPage() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {bookings.map(booking => (
-          <BookingCard 
-            key={booking.bookingId} 
-            booking={booking} 
+          <BookingCard
+            key={booking.bookingId}
+            booking={booking}
             experience={mockExperiencesData[booking.experienceRef]}
             relatedUser={mockUsersData[booking.hostRef]}
             currentUserRole="client"
@@ -85,7 +85,7 @@ export default function MyBookingsPage() {
             <TabsTrigger value="past" className="py-3 text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md">السابقة ({pastBookings.length})</TabsTrigger>
             <TabsTrigger value="cancelled" className="py-3 text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md">الملغاة ({cancelledBookings.length})</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="upcoming">
             {renderBookingList(upcomingBookings)}
           </TabsContent>
