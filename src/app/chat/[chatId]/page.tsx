@@ -5,7 +5,7 @@ import { AppHeader } from "@/components/app/app-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, Paperclip, ArrowRight, Image as ImageIcon, FileText, Loader2, MapPin, Mic, Square, Play } from "lucide-react";
+import { Send, Paperclip, ArrowRight, Image as ImageIcon, FileText, Loader2, MapPin, Mic, Square } from "lucide-react";
 import React, { useState, useEffect, useRef, use } from "react";
 import type { Message } from "@/models";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -89,18 +89,6 @@ export default function ChatPage({ params: paramsPromise }: ChatPageProps) {
     setTimeout(scrollToBottom, 100); 
   }, []);
 
-  // Cleanup Object URLs
-  useEffect(() => {
-    return () => {
-      messages.forEach(msg => {
-        if (msg.type === 'audio' && msg.mediaUrl && msg.mediaUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(msg.mediaUrl);
-        }
-      });
-    };
-  }, [messages]);
-
-
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim() === "") return;
@@ -175,7 +163,7 @@ export default function ChatPage({ params: paramsPromise }: ChatPageProps) {
     }, 2500);
   };
 
-  const addAudioMessage = (audioUrl: string, duration: number) => {
+  const addAudioMessage = (audioDataUrl: string, duration: number) => {
     const msg: ChatMessage = {
       messageId: `audio-${Date.now()}`,
       senderRef: currentUser.uid,
@@ -183,7 +171,7 @@ export default function ChatPage({ params: paramsPromise }: ChatPageProps) {
       content: "رسالة صوتية",
       timestamp: new Date(),
       type: 'audio',
-      mediaUrl: audioUrl,
+      mediaUrl: audioDataUrl,
       duration: duration,
     };
     setMessages(prevMessages => [...prevMessages, msg]);
@@ -194,7 +182,7 @@ export default function ChatPage({ params: paramsPromise }: ChatPageProps) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      setAudioChunks([]); // Clear previous chunks
+      setAudioChunks([]); 
 
       mediaRecorderRef.current.ondataavailable = (event) => {
         setAudioChunks((prev) => [...prev, event.data]);
@@ -202,13 +190,17 @@ export default function ChatPage({ params: paramsPromise }: ChatPageProps) {
 
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        const audioUrl = URL.createObjectURL(audioBlob);
         const duration = recordingStartTime ? Math.round((Date.now() - recordingStartTime) / 1000) : 0;
-        addAudioMessage(audioUrl, duration);
         
-        // Clean up stream tracks
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64data = reader.result as string;
+            addAudioMessage(base64data, duration);
+        };
+        reader.readAsDataURL(audioBlob);
+        
         stream.getTracks().forEach(track => track.stop());
-        setAudioChunks([]); // Reset for next recording
+        setAudioChunks([]); 
         setRecordingStartTime(null);
       };
 
@@ -294,7 +286,7 @@ export default function ChatPage({ params: paramsPromise }: ChatPageProps) {
                         <Mic className="h-4 w-4 shrink-0" />
                         <audio controls src={msg.mediaUrl} className="max-w-[200px] h-8"></audio>
                         {msg.duration !== undefined && (
-                            <span className="text-xs text-muted-foreground pr-1 tabular-nums">
+                            <span className="text-xs text-primary-foreground/80 dark:text-card-foreground/80 pr-1 tabular-nums">
                                 ({formatDuration(msg.duration)})
                             </span>
                         )}
