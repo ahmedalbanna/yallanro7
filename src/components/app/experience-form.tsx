@@ -102,16 +102,13 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
         reader.onload = (e) => {
           if (e.target?.result) {
             newDataUrls.push(e.target.result as string);
-            // This might cause multiple re-renders, better to batch update if possible
-            // For simplicity, updating one by one. If performance issues, collect all promises and set once.
-            if (i === files.length -1) { // Update form value after last file is processed
+            if (i === files.length -1) { 
                  form.setValue("images", [...newDataUrls.filter((item, index) => newDataUrls.indexOf(item) === index)], { shouldValidate: true });
             }
           }
         };
         reader.readAsDataURL(file);
       }
-       // Reset file input to allow selecting the same file again if removed
       if (imageInputRef.current) {
         imageInputRef.current.value = "";
       }
@@ -182,7 +179,6 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
               )}
             />
             
-            {/* Images Field */}
             <FormField
               control={form.control}
               name="images"
@@ -190,7 +186,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                 <FormItem>
                   <FormLabel className="text-base flex items-center"><ImageIconLucide className="ml-2 h-4 w-4 text-muted-foreground"/> صور التجربة</FormLabel>
                   <FormControl>
-                    <>
+                    <div> {/* Added div wrapper here */}
                       <Button type="button" variant="outline" onClick={() => imageInputRef.current?.click()} className="w-full sm:w-auto">
                         <PlusCircle className="ml-2 h-4 w-4" /> إرفاق صور
                       </Button>
@@ -218,7 +214,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                           </div>
                         ))}
                       </div>
-                    </>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -337,7 +333,6 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
               )}
             />
             
-            {/* Activities Field */}
             <FormField
               control={form.control}
               name="activities"
@@ -369,7 +364,6 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
               )}
             />
             
-            {/* Available Dates Field */}
             <FormField
               control={form.control}
               name="availableDates"
@@ -423,7 +417,6 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
               )}
             />
 
-            {/* Available Times Field */}
             <FormField
               control={form.control}
               name="availableTimes"
@@ -450,7 +443,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                   <div className="mt-2 space-x-2 space-x-reverse space-y-2">
                     {field.value.map((time, index) => (
                       <Badge key={index} variant="secondary" className="py-1 px-3 text-sm">
-                        {time} {/* Display as HH:mm */}
+                        {time} 
                         <XCircle className="mr-1.5 h-4 w-4 cursor-pointer hover:text-destructive" onClick={() => removeFromList("availableTimes", index)} />
                       </Badge>
                     ))}
@@ -491,5 +484,3 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
     </Card>
   );
 }
-
-    
