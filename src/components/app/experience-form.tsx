@@ -59,28 +59,51 @@ export type ExperienceFormValues = z.infer<typeof experienceFormSchema>;
 
 export function ExperienceForm({ mode, initialData, categories, cities, onSubmitHandler, isLoading }: ExperienceFormProps) {
   
-  const defaultValues = React.useMemo(() => ({
-    title: initialData?.title || "",
-    description: initialData?.description || "",
-    price: initialData?.price || 0,
-    currency: initialData?.currency || "ر.س",
-    duration: initialData?.duration || "",
-    maxGuests: initialData?.maxGuests || 1,
-    city: initialData?.city || "",
-    categoryRef: initialData?.categoryRef || "",
-    address: initialData?.address || "",
-    activities: initialData?.activities || [],
-    images: initialData?.images || [],
-    availableDates: initialData?.availableDates || [],
-    availableTimes: initialData?.availableTimes || [],
-    isActive: initialData?.isActive === undefined ? true : initialData.isActive,
-  }), [initialData]);
-
   const form = useForm<ExperienceFormValues>({
     resolver: zodResolver(experienceFormSchema),
-    defaultValues,
+    // Default values will be set by the useEffect below based on mode and initialData
   });
   
+  const defaultValues = React.useMemo<ExperienceFormValues>(() => {
+    const baseDefaults: ExperienceFormValues = {
+      title: "",
+      description: "",
+      price: 0,
+      currency: "ر.س",
+      duration: "",
+      maxGuests: 1,
+      city: "",
+      categoryRef: "",
+      address: "",
+      activities: [],
+      images: [],
+      availableDates: [],
+      availableTimes: [],
+      isActive: true, // Default to true for all cases initially
+    };
+
+    if (mode === 'edit' && initialData) {
+      return {
+        title: initialData.title || baseDefaults.title,
+        description: initialData.description || baseDefaults.description,
+        price: initialData.price || baseDefaults.price,
+        currency: initialData.currency || baseDefaults.currency,
+        duration: initialData.duration || baseDefaults.duration,
+        maxGuests: initialData.maxGuests || baseDefaults.maxGuests,
+        city: initialData.city || baseDefaults.city,
+        categoryRef: initialData.categoryRef || baseDefaults.categoryRef,
+        address: initialData.address || baseDefaults.address,
+        activities: initialData.activities || baseDefaults.activities,
+        images: initialData.images || baseDefaults.images,
+        availableDates: initialData.availableDates || baseDefaults.availableDates,
+        availableTimes: initialData.availableTimes || baseDefaults.availableTimes,
+        isActive: typeof initialData.isActive === 'boolean' ? initialData.isActive : baseDefaults.isActive,
+      };
+    }
+    // For 'create' mode
+    return baseDefaults;
+  }, [mode, initialData]);
+
   useEffect(() => {
     form.reset(defaultValues);
   }, [defaultValues, form]);
@@ -106,7 +129,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
               reject(new Error("فشل في قراءة الملف"));
             }
           };
-          reader.onerror = (e) => reject(new Error("خطأ في قراءة الملف"));
+          reader.onerror = (_e) => reject(new Error("خطأ في قراءة الملف"));
           reader.readAsDataURL(file);
         });
       });
@@ -114,8 +137,8 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
       try {
         const results = await Promise.all(filePromises);
         const allImages = [...currentImages, ...results];
-        const uniqueImages = [...new Set(allImages)]; // Ensure uniqueness if needed
-        form.setValue("images", uniqueImages, { shouldValidate: true });
+        // const uniqueImages = [...new Set(allImages)]; // Ensure uniqueness if needed
+        form.setValue("images", allImages, { shouldValidate: true });
       } catch (error) {
         console.error("خطأ في معالجة الملفات:", error);
         // Consider showing a toast message to the user here
@@ -128,21 +151,21 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
   };
 
   const removeImage = (index: number) => {
-    const currentImages = form.getValues("images");
+    const currentImages = form.getValues("images") || [];
     currentImages.splice(index, 1);
     form.setValue("images", [...currentImages], { shouldValidate: true });
   };
 
   const addToList = (field: keyof ExperienceFormValues, value: string) => {
     if (!value.trim()) return;
-    const currentList = form.getValues(field as any) as string[];
+    const currentList = (form.getValues(field as any) as string[]) || [];
     if (!currentList.includes(value.trim())) {
       form.setValue(field as any, [...currentList, value.trim()], { shouldValidate: true });
     }
   };
 
   const removeFromList = (field: keyof ExperienceFormValues, index: number) => {
-    const currentList = form.getValues(field as any) as string[];
+    const currentList = (form.getValues(field as any) as string[]) || [];
     currentList.splice(index, 1);
     form.setValue(field as any, [...currentList], { shouldValidate: true });
   };
@@ -213,7 +236,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                       <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         {(field.value || []).map((src, index) => (
                           <div key={index} className="relative group aspect-video">
-                            <Image src={src} alt={`معاينة الصورة ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md border" data-ai-hint="experience photo"/>
+                            <Image src={src} alt={`معاينة الصورة ${index + 1}`} fill objectFit="cover" className="rounded-md border" data-ai-hint="experience photo"/>
                             <Button
                               type="button"
                               variant="destructive"
@@ -480,6 +503,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      aria-label="تفعيل التجربة"
                     />
                   </FormControl>
                 </FormItem>
@@ -496,3 +520,5 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
     </Card>
   );
 }
+
+    
