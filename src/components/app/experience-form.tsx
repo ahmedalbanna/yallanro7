@@ -59,11 +59,6 @@ export type ExperienceFormValues = z.infer<typeof experienceFormSchema>;
 
 export function ExperienceForm({ mode, initialData, categories, cities, onSubmitHandler, isLoading }: ExperienceFormProps) {
   
-  const form = useForm<ExperienceFormValues>({
-    resolver: zodResolver(experienceFormSchema),
-    // Default values will be set by the useEffect below based on mode and initialData
-  });
-  
   const defaultValues = React.useMemo<ExperienceFormValues>(() => {
     const baseDefaults: ExperienceFormValues = {
       title: "",
@@ -79,17 +74,17 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
       images: [],
       availableDates: [],
       availableTimes: [],
-      isActive: true, // Default to true for all cases initially
+      isActive: true,
     };
 
     if (mode === 'edit' && initialData) {
       return {
         title: initialData.title || baseDefaults.title,
         description: initialData.description || baseDefaults.description,
-        price: initialData.price || baseDefaults.price,
+        price: initialData.price === null || initialData.price === undefined ? baseDefaults.price : initialData.price,
         currency: initialData.currency || baseDefaults.currency,
         duration: initialData.duration || baseDefaults.duration,
-        maxGuests: initialData.maxGuests || baseDefaults.maxGuests,
+        maxGuests: initialData.maxGuests === null || initialData.maxGuests === undefined ? baseDefaults.maxGuests : initialData.maxGuests,
         city: initialData.city || baseDefaults.city,
         categoryRef: initialData.categoryRef || baseDefaults.categoryRef,
         address: initialData.address || baseDefaults.address,
@@ -100,13 +95,25 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
         isActive: typeof initialData.isActive === 'boolean' ? initialData.isActive : baseDefaults.isActive,
       };
     }
-    // For 'create' mode
     return baseDefaults;
   }, [mode, initialData]);
-
+  
+  const form = useForm<ExperienceFormValues>({
+    resolver: zodResolver(experienceFormSchema),
+    defaultValues: defaultValues, 
+  });
+  
+  // This useEffect is no longer strictly necessary for initialization if defaultValues are passed to useForm.
+  // However, it can be useful if `initialData` or `mode` could change causing `defaultValues` to change,
+  // and you want the form to reset to these new defaults. For this specific case (create/edit page load),
+  // it might be redundant if `defaultValues` is stable after first calculation.
+  // For safety and to handle potential dynamic changes to initialData (though less common for a form like this):
   useEffect(() => {
-    form.reset(defaultValues);
-  }, [defaultValues, form]);
+    if (mode === 'edit' && initialData) {
+      form.reset(defaultValues);
+    }
+  }, [initialData, mode, form, defaultValues]);
+
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   
@@ -137,15 +144,13 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
       try {
         const results = await Promise.all(filePromises);
         const allImages = [...currentImages, ...results];
-        // const uniqueImages = [...new Set(allImages)]; // Ensure uniqueness if needed
         form.setValue("images", allImages, { shouldValidate: true });
       } catch (error) {
         console.error("خطأ في معالجة الملفات:", error);
-        // Consider showing a toast message to the user here
       }
 
       if (imageInputRef.current) {
-        imageInputRef.current.value = ""; // Clear the input field to allow re-selecting same file
+        imageInputRef.current.value = ""; 
       }
     }
   };
@@ -326,7 +331,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                            {cities.map(city => <SelectItem key={city.cityId} value={city.name} className="font-body">{city.name}</SelectItem>)}
+                            {(cities || []).map(city => <SelectItem key={city.cityId} value={city.name} className="font-body">{city.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -346,7 +351,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                            {categories.map(cat => <SelectItem key={cat.categoryId} value={cat.categoryId} className="font-body">{cat.name}</SelectItem>)}
+                            {(categories || []).map(cat => <SelectItem key={cat.categoryId} value={cat.categoryId} className="font-body">{cat.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -371,7 +376,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
             <FormField
               control={form.control}
               name="activities"
-              render={({ field }) => (
+              render={({ field }) => ( // field.value here is string[]
                 <FormItem>
                   <FormLabel className="text-base flex items-center"><List className="ml-2 h-4 w-4 text-muted-foreground"/> الأنشطة</FormLabel>
                   <div className="flex gap-2 items-start">
@@ -394,7 +399,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                       </Badge>
                     ))}
                   </div>
-                  <FormMessage />
+                  <FormMessage /> {/* This will show validation messages for the 'activities' array */}
                 </FormItem>
               )}
             />
@@ -520,5 +525,3 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
     </Card>
   );
 }
-
-    
