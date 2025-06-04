@@ -3,9 +3,9 @@
 
 import { AppHeader } from "@/components/app/app-header";
 import { ExperienceForm, type ExperienceFormValues } from "@/components/app/experience-form";
-import { mockCategories, mockCities } from "@/app/page"; // This is not ideal, consider a shared mock data file
+import { mockCategories, mockCities } from "@/app/page"; 
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation"; // Or next/router for older versions
+import { useRouter } from "next/navigation"; 
 import React from "react";
 
 export default function CreateExperiencePage() {
@@ -19,15 +19,8 @@ export default function CreateExperiencePage() {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // Parse string arrays - in real app, backend would likely handle this
-    const experienceData = {
-        ...data,
-        activities: data.activities.split(',').map(s => s.trim()).filter(s => s),
-        images: data.images.split(',').map(s => s.trim()).filter(s => s),
-        availableDates: data.availableDates.split(',').map(s => s.trim()).filter(s => s),
-        availableTimes: data.availableTimes.split(',').map(s => s.trim()).filter(s => s),
-    };
-    console.log("Parsed experience data for API:", experienceData);
+    // Data is already in the correct array format from ExperienceForm
+    console.log("Experience data for API:", data);
     // TODO: Call actual API to save the experience
 
     setIsLoading(false);
@@ -35,7 +28,7 @@ export default function CreateExperiencePage() {
       title: "نجاح!",
       description: `تم إنشاء التجربة "${data.title}" بنجاح.`,
     });
-    router.push("/host/listings"); // Redirect to listings page
+    router.push("/host/listings"); 
   };
 
   return (
@@ -58,3 +51,5 @@ export default function CreateExperiencePage() {
     </div>
   );
 }
+
+    

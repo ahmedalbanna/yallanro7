@@ -3,7 +3,7 @@
 
 import type { Experience, Category, City } from "@/models";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,10 +19,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DollarSign, List, MapPinIcon, TagIcon, Image as ImageIcon, CalendarDays, ClockIcon, Users, CheckSquare } from "lucide-react";
-import React from "react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
+import { DollarSign, List, MapPinIcon, TagIcon, ImageIcon as ImageIconLucide, CalendarDays, ClockIcon, Users, CheckSquare, PlusCircle, XCircle, CalendarIcon as CalendarIconLucide } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { format as formatDate, parseISO } from "date-fns";
+import { arSA } from "date-fns/locale";
 
 interface ExperienceFormProps {
   mode: 'create' | 'edit';
@@ -43,17 +48,16 @@ const experienceFormSchema = z.object({
   city: z.string().min(1, { message: "المدينة مطلوبة."}),
   categoryRef: z.string().min(1, { message: "الفئة مطلوبة."}),
   address: z.string().min(5, { message: "العنوان التفصيلي مطلوب."}),
-  activities: z.string().min(1, {message: "اذكر نشاطاً واحداً على الأقل. افصل بين الأنشطة بفاصلة."}),
-  images: z.string().min(1, {message: "أضف رابط صورة واحدة على الأقل. افصل بين الروابط بفاصلة."}),
-  availableDates: z.string().min(1, {message: "أضف تاريخاً متاحاً واحداً على الأقل (YYYY-MM-DD). افصل بفاصلة."}),
-  availableTimes: z.string().min(1, {message: "أضف وقتاً متاحاً واحداً على الأقل (HH:MM AM/PM). افصل بفاصلة."}),
+  activities: z.array(z.string().min(1, "وصف النشاط مطلوب.")).min(1, { message: "اذكر نشاطاً واحداً على الأقل." }),
+  images: z.array(z.string().min(1, "رابط أو بيانات الصورة مطلوبة.")).min(1, { message: "أضف صورة واحدة على الأقل." }),
+  availableDates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "التاريخ يجب أن يكون بصيغة YYYY-MM-DD")).min(1, { message: "أضف تاريخاً متاحاً واحداً على الأقل." }),
+  availableTimes: z.array(z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "الوقت يجب أن يكون بصيغة HH:MM (24 ساعة)")).min(1, { message: "أضف وقتاً متاحاً واحداً على الأقل." }),
   isActive: z.boolean().default(true),
 });
 
 export type ExperienceFormValues = z.infer<typeof experienceFormSchema>;
 
 export function ExperienceForm({ mode, initialData, categories, cities, onSubmitHandler, isLoading }: ExperienceFormProps) {
-  const { toast } = useToast();
   
   const defaultValues = React.useMemo(() => ({
     title: initialData?.title || "",
@@ -65,10 +69,10 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
     city: initialData?.city || "",
     categoryRef: initialData?.categoryRef || "",
     address: initialData?.address || "",
-    activities: initialData?.activities?.join(", ") || "",
-    images: initialData?.images?.join(", ") || "",
-    availableDates: initialData?.availableDates?.join(", ") || "",
-    availableTimes: initialData?.availableTimes?.join(", ") || "",
+    activities: initialData?.activities || [],
+    images: initialData?.images || [],
+    availableDates: initialData?.availableDates || [],
+    availableTimes: initialData?.availableTimes || [],
     isActive: initialData?.isActive === undefined ? true : initialData.isActive,
   }), [initialData]);
 
@@ -77,9 +81,62 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
     defaultValues,
   });
   
-  React.useEffect(() => {
+  useEffect(() => {
     form.reset(defaultValues);
   }, [defaultValues, form]);
+
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  
+  const [currentActivity, setCurrentActivity] = useState("");
+  const [currentSelectedDate, setCurrentSelectedDate] = useState<Date | undefined>(undefined);
+  const [currentTime, setCurrentTime] = useState("");
+
+  const handleImageFilesChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const currentImages = form.getValues("images");
+      const newDataUrls: string[] = [...currentImages];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            newDataUrls.push(e.target.result as string);
+            // This might cause multiple re-renders, better to batch update if possible
+            // For simplicity, updating one by one. If performance issues, collect all promises and set once.
+            if (i === files.length -1) { // Update form value after last file is processed
+                 form.setValue("images", [...newDataUrls.filter((item, index) => newDataUrls.indexOf(item) === index)], { shouldValidate: true });
+            }
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+       // Reset file input to allow selecting the same file again if removed
+      if (imageInputRef.current) {
+        imageInputRef.current.value = "";
+      }
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const currentImages = form.getValues("images");
+    currentImages.splice(index, 1);
+    form.setValue("images", [...currentImages], { shouldValidate: true });
+  };
+
+  const addToList = (field: keyof ExperienceFormValues, value: string) => {
+    if (!value.trim()) return;
+    const currentList = form.getValues(field as any) as string[];
+    if (!currentList.includes(value.trim())) {
+      form.setValue(field as any, [...currentList, value.trim()], { shouldValidate: true });
+    }
+  };
+
+  const removeFromList = (field: keyof ExperienceFormValues, index: number) => {
+    const currentList = form.getValues(field as any) as string[];
+    currentList.splice(index, 1);
+    form.setValue(field as any, [...currentList], { shouldValidate: true });
+  };
 
   const processSubmit = (values: ExperienceFormValues) => {
     onSubmitHandler(values);
@@ -97,7 +154,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(processSubmit)} className="font-body">
-          <CardContent className="space-y-6 p-6">
+          <CardContent className="space-y-8 p-6">
             <FormField
               control={form.control}
               name="title"
@@ -124,6 +181,50 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                 </FormItem>
               )}
             />
+            
+            {/* Images Field */}
+            <FormField
+              control={form.control}
+              name="images"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base flex items-center"><ImageIconLucide className="ml-2 h-4 w-4 text-muted-foreground"/> صور التجربة</FormLabel>
+                  <FormControl>
+                    <>
+                      <Button type="button" variant="outline" onClick={() => imageInputRef.current?.click()} className="w-full sm:w-auto">
+                        <PlusCircle className="ml-2 h-4 w-4" /> إرفاق صور
+                      </Button>
+                      <input
+                        type="file"
+                        ref={imageInputRef}
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageFilesChange}
+                        className="hidden"
+                      />
+                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        {field.value.map((src, index) => (
+                          <div key={index} className="relative group aspect-video">
+                            <Image src={src} alt={`معاينة الصورة ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md border" data-ai-hint="experience photo"/>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-1 right-1 h-6 w-6 opacity-75 group-hover:opacity-100"
+                              onClick={() => removeImage(index)}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <FormField
                 control={form.control}
@@ -187,7 +288,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel className="text-base flex items-center"><MapPinIcon className="ml-2 h-4 w-4 text-muted-foreground"/> المدينة</FormLabel>
-                        <Select dir="rtl" onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                             <SelectTrigger className="h-11 text-base bg-input focus:bg-background">
                                 <SelectValue placeholder="اختر المدينة" />
@@ -207,7 +308,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel className="text-base flex items-center"><TagIcon className="ml-2 h-4 w-4 text-muted-foreground"/> الفئة</FormLabel>
-                         <Select dir="rtl" onValueChange={field.onChange} defaultValue={field.value}>
+                         <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                             <SelectTrigger className="h-11 text-base bg-input focus:bg-background">
                                 <SelectValue placeholder="اختر الفئة" />
@@ -235,58 +336,130 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                 </FormItem>
               )}
             />
-             <FormField
+            
+            {/* Activities Field */}
+            <FormField
               control={form.control}
               name="activities"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base flex items-center"><List className="ml-2 h-4 w-4 text-muted-foreground"/> الأنشطة (افصل بينها بفاصلة)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="مثال: جولة إرشادية, تذوق طعام, ورشة عمل" {...field} rows={3} className="text-base bg-input focus:bg-background" />
-                  </FormControl>
+                  <FormLabel className="text-base flex items-center"><List className="ml-2 h-4 w-4 text-muted-foreground"/> الأنشطة</FormLabel>
+                  <div className="flex gap-2 items-start">
+                    <Input 
+                      placeholder="اكتب نشاطًا ثم اضغط إضافة" 
+                      value={currentActivity} 
+                      onChange={(e) => setCurrentActivity(e.target.value)} 
+                      className="text-base h-11 bg-input focus:bg-background flex-grow"
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addToList("activities", currentActivity); setCurrentActivity("");}}}
+                    />
+                    <Button type="button" variant="outline" onClick={() => { addToList("activities", currentActivity); setCurrentActivity("");}} className="h-11">
+                        <PlusCircle className="h-4 w-4" /> 
+                    </Button>
+                  </div>
+                  <div className="mt-2 space-x-2 space-x-reverse space-y-2">
+                    {field.value.map((activity, index) => (
+                      <Badge key={index} variant="secondary" className="py-1 px-3 text-sm">
+                        {activity}
+                        <XCircle className="mr-1.5 h-4 w-4 cursor-pointer hover:text-destructive" onClick={() => removeFromList("activities", index)} />
+                      </Badge>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="images"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base flex items-center"><ImageIcon className="ml-2 h-4 w-4 text-muted-foreground"/> روابط الصور (افصل بينها بفاصلة)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="مثال: https://example.com/image1.png, https://example.com/image2.jpg" {...field} rows={3} className="text-base bg-input focus:bg-background" dir="ltr" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            
+            {/* Available Dates Field */}
             <FormField
               control={form.control}
               name="availableDates"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base flex items-center"><CalendarDays className="ml-2 h-4 w-4 text-muted-foreground"/> التواريخ المتاحة (YYYY-MM-DD، افصل بفاصلة)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="مثال: 2024-09-15, 2024-09-20" {...field} className="text-base h-11 bg-input focus:bg-background" dir="ltr" />
-                  </FormControl>
+                  <FormLabel className="text-base flex items-center"><CalendarDays className="ml-2 h-4 w-4 text-muted-foreground"/> التواريخ المتاحة</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={`w-full justify-start text-left font-normal h-12 text-base bg-input focus:bg-background ${!currentSelectedDate && "text-muted-foreground"}`}
+                        >
+                          <CalendarIconLucide className="ml-2 h-4 w-4" />
+                          {currentSelectedDate ? formatDate(currentSelectedDate, "PPP", { locale: arSA }) : <span>اختر تاريخاً لإضافته</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={currentSelectedDate}
+                          onSelect={setCurrentSelectedDate}
+                          initialFocus
+                          locale={arSA}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => {
+                            if (currentSelectedDate) {
+                                addToList("availableDates", formatDate(currentSelectedDate, "yyyy-MM-dd"));
+                                setCurrentSelectedDate(undefined);
+                            }
+                        }} 
+                        className="mt-2 w-full sm:w-auto"
+                        disabled={!currentSelectedDate}
+                    >
+                        <PlusCircle className="ml-2 h-4 w-4" /> إضافة التاريخ المحدد
+                    </Button>
+                  <div className="mt-2 space-x-2 space-x-reverse space-y-2">
+                    {field.value.map((dateStr, index) => (
+                      <Badge key={index} variant="secondary" className="py-1 px-3 text-sm">
+                        {formatDate(parseISO(dateStr), "PPP", { locale: arSA })}
+                        <XCircle className="mr-1.5 h-4 w-4 cursor-pointer hover:text-destructive" onClick={() => removeFromList("availableDates", index)} />
+                      </Badge>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {/* Available Times Field */}
             <FormField
               control={form.control}
               name="availableTimes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base flex items-center"><ClockIcon className="ml-2 h-4 w-4 text-muted-foreground"/> الأوقات المتاحة (افصل بفاصلة)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="مثال: 10:00 AM, 02:00 PM, 05:00 PM" {...field} className="text-base h-11 bg-input focus:bg-background" dir="ltr"/>
-                  </FormControl>
+                  <FormLabel className="text-base flex items-center"><ClockIcon className="ml-2 h-4 w-4 text-muted-foreground"/> الأوقات المتاحة (صيغة 24 ساعة)</FormLabel>
+                  <div className="flex gap-2 items-start">
+                    <Input 
+                      type="time"
+                      value={currentTime} 
+                      onChange={(e) => setCurrentTime(e.target.value)} 
+                      className="text-base h-11 bg-input focus:bg-background flex-grow"
+                    />
+                    <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => { addToList("availableTimes", currentTime); setCurrentTime("");}} 
+                        className="h-11"
+                        disabled={!currentTime}
+                    >
+                        <PlusCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="mt-2 space-x-2 space-x-reverse space-y-2">
+                    {field.value.map((time, index) => (
+                      <Badge key={index} variant="secondary" className="py-1 px-3 text-sm">
+                        {time} {/* Display as HH:mm */}
+                        <XCircle className="mr-1.5 h-4 w-4 cursor-pointer hover:text-destructive" onClick={() => removeFromList("availableTimes", index)} />
+                      </Badge>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="isActive"
@@ -318,3 +491,5 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
     </Card>
   );
 }
+
+    

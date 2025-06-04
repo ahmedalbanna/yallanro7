@@ -3,29 +3,29 @@
 import { AppHeader } from "@/components/app/app-header";
 import { ExperienceForm, type ExperienceFormValues } from "@/components/app/experience-form";
 import type { Experience } from "@/models";
-import { mockCategories, mockCities } from "@/app/page"; // This is not ideal
+import { mockCategories, mockCities } from "@/app/page"; 
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import React, { use } from "react";
 
 // Mock data fetching - replace with actual data fetching based on params.experienceId
-const mockExperience: Experience = {
+const mockExperienceToEdit: Experience = {
   experienceId: 'exp1',
   title: 'رحلة سفاري صحراوية مثيرة مع عشاء تقليدي',
   description: 'انطلق في مغامرة لا تُنسى عبر كثبان الذهب الرملية الساحرة، واستمتع بتجربة قيادة سيارات الدفع الرباعي المثيرة بين التضاريس المتنوعة. شاهد غروب الشمس الخلاب وهو يلون السماء بألوان دافئة، واختتم يومك بعشاء تقليدي فاخر تحت النجوم المتلألئة.',
   activities: ['قيادة سيارات الدفع الرباعي', 'ركوب الجمال', 'عشاء تقليدي فاخر'],
-  images: ['https://placehold.co/600x400.png?text=Safari1', 'https://placehold.co/600x400.png?text=Safari2'],
+  images: ['https://placehold.co/600x400.png?text=Safari1&font=belleza', 'https://placehold.co/600x400.png?text=Safari2&font=belleza'],
   price: 350,
   currency: 'ر.س',
   duration: '6 ساعات',
   maxGuests: 10,
   location: { lat: 24.774265, lng: 46.738586 },
   address: 'مخيم صحراوي فاخر، بالقرب من الرياض',
-  city: 'الرياض', // Should match a name in mockCities for Select to pre-select
-  categoryRef: 'cat1', // Should match a categoryId in mockCategories
+  city: 'الرياض', 
+  categoryRef: 'cat1', 
   hostRef: 'host1',
   availableDates: ['2024-09-15', '2024-09-20', '2024-09-25'],
-  availableTimes: ['03:00 PM', '05:00 PM'],
+  availableTimes: ['15:00', '17:00'], // HH:mm format
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -47,13 +47,9 @@ export default function EditExperiencePage({ params: paramsPromise }: EditExperi
   const [isLoading, setIsLoading] = React.useState(false);
 
   // In a real app, fetch experience data by experienceId here
-  // For now, using mockExperience and adding the ID from params
   const experienceToEdit: Partial<Experience> = {
-    ...mockExperience,
+    ...mockExperienceToEdit, // Use the updated mock data with arrays
     experienceId,
-    // Ensure city and categoryRef match values used by Select components if they are names/IDs
-    city: mockExperience.city, // Assuming mockExperience.city is the value (name) used in Select
-    categoryRef: mockExperience.categoryRef, // Assuming mockExperience.categoryRef is the value (ID)
   };
 
 
@@ -63,14 +59,8 @@ export default function EditExperiencePage({ params: paramsPromise }: EditExperi
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const experienceData = {
-        ...data,
-        activities: data.activities.split(',').map(s => s.trim()).filter(s => s),
-        images: data.images.split(',').map(s => s.trim()).filter(s => s),
-        availableDates: data.availableDates.split(',').map(s => s.trim()).filter(s => s),
-        availableTimes: data.availableTimes.split(',').map(s => s.trim()).filter(s => s),
-    };
-    console.log("Parsed experience data for API (update):", experienceData);
+    // Data is already in the correct array format from ExperienceForm
+    console.log("Parsed experience data for API (update):", data);
     // TODO: Call actual API to update the experience
 
     setIsLoading(false);
@@ -102,3 +92,5 @@ export default function EditExperiencePage({ params: paramsPromise }: EditExperi
     </div>
   );
 }
+
+    
