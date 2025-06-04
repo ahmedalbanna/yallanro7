@@ -94,23 +94,35 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
   const handleImageFilesChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      const currentImages = form.getValues("images");
-      const newDataUrls: string[] = [...currentImages];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            newDataUrls.push(e.target.result as string);
-            if (i === files.length -1) { 
-                 form.setValue("images", [...newDataUrls.filter((item, index) => newDataUrls.indexOf(item) === index)], { shouldValidate: true });
+      const currentImages = form.getValues("images") || [];
+      
+      const filePromises = Array.from(files).map(file => {
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (e.target?.result) {
+              resolve(e.target.result as string);
+            } else {
+              reject(new Error("فشل في قراءة الملف"));
             }
-          }
-        };
-        reader.readAsDataURL(file);
+          };
+          reader.onerror = (e) => reject(new Error("خطأ في قراءة الملف"));
+          reader.readAsDataURL(file);
+        });
+      });
+
+      try {
+        const results = await Promise.all(filePromises);
+        const allImages = [...currentImages, ...results];
+        const uniqueImages = [...new Set(allImages)]; // Ensure uniqueness if needed
+        form.setValue("images", uniqueImages, { shouldValidate: true });
+      } catch (error) {
+        console.error("خطأ في معالجة الملفات:", error);
+        // Consider showing a toast message to the user here
       }
+
       if (imageInputRef.current) {
-        imageInputRef.current.value = "";
+        imageInputRef.current.value = ""; // Clear the input field to allow re-selecting same file
       }
     }
   };
@@ -186,7 +198,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                 <FormItem>
                   <FormLabel className="text-base flex items-center"><ImageIconLucide className="ml-2 h-4 w-4 text-muted-foreground"/> صور التجربة</FormLabel>
                   <FormControl>
-                    <div> {/* Added div wrapper here */}
+                    <div>
                       <Button type="button" variant="outline" onClick={() => imageInputRef.current?.click()} className="w-full sm:w-auto">
                         <PlusCircle className="ml-2 h-4 w-4" /> إرفاق صور
                       </Button>
@@ -199,7 +211,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                         className="hidden"
                       />
                       <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {field.value.map((src, index) => (
+                        {(field.value || []).map((src, index) => (
                           <div key={index} className="relative group aspect-video">
                             <Image src={src} alt={`معاينة الصورة ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md border" data-ai-hint="experience photo"/>
                             <Button
@@ -352,7 +364,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                     </Button>
                   </div>
                   <div className="mt-2 space-x-2 space-x-reverse space-y-2">
-                    {field.value.map((activity, index) => (
+                    {(field.value || []).map((activity, index) => (
                       <Badge key={index} variant="secondary" className="py-1 px-3 text-sm">
                         {activity}
                         <XCircle className="mr-1.5 h-4 w-4 cursor-pointer hover:text-destructive" onClick={() => removeFromList("activities", index)} />
@@ -405,7 +417,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                         <PlusCircle className="ml-2 h-4 w-4" /> إضافة التاريخ المحدد
                     </Button>
                   <div className="mt-2 space-x-2 space-x-reverse space-y-2">
-                    {field.value.map((dateStr, index) => (
+                    {(field.value || []).map((dateStr, index) => (
                       <Badge key={index} variant="secondary" className="py-1 px-3 text-sm">
                         {formatDate(parseISO(dateStr), "PPP", { locale: arSA })}
                         <XCircle className="mr-1.5 h-4 w-4 cursor-pointer hover:text-destructive" onClick={() => removeFromList("availableDates", index)} />
@@ -441,7 +453,7 @@ export function ExperienceForm({ mode, initialData, categories, cities, onSubmit
                     </Button>
                   </div>
                   <div className="mt-2 space-x-2 space-x-reverse space-y-2">
-                    {field.value.map((time, index) => (
+                    {(field.value || []).map((time, index) => (
                       <Badge key={index} variant="secondary" className="py-1 px-3 text-sm">
                         {time} 
                         <XCircle className="mr-1.5 h-4 w-4 cursor-pointer hover:text-destructive" onClick={() => removeFromList("availableTimes", index)} />
